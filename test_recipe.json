@@ -1,0 +1,9 @@
+{
+    "name": "Keppeh",
+    "description": "Arabe",
+    "recipe_type": "final_dish",
+    "yield_quantity": 30,
+    "target_margin": 0.35,
+    "preparation_time": 30,
+    "shelf_life_hours": 24
+}
