@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { X, Save, Search, AlertCircle, ChefHat, Carrot } from 'lucide-react'
+import { X, Save, Search, AlertCircle, ChefHat, Carrot, Plus } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import PropTypes from 'prop-types'
+import CreateIngredientModal from '../ingredients/CreateIngredientModal'
+import SmartCombobox from '../ui/SmartCombobox'
+import { Controller } from 'react-hook-form'
 
 export default function AddRecipeItemModal({ isOpen, onClose, recipeId }) {
     const queryClient = useQueryClient()
@@ -11,7 +14,7 @@ export default function AddRecipeItemModal({ isOpen, onClose, recipeId }) {
     const [activeTab, setActiveTab] = useState('ingredient') // 'ingredient' | 'recipe'
 
     // Form setup
-    const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
+    const { register, handleSubmit, reset, watch, setValue, control, formState: { errors } } = useForm({
         defaultValues: {
             ingredient_id: '',
             child_recipe_id: '',
@@ -21,15 +24,7 @@ export default function AddRecipeItemModal({ isOpen, onClose, recipeId }) {
         }
     })
 
-    // Fetch Ingredients (Simple full list for now, ideally paginated search)
-    const { data: ingredientsData } = useQuery({
-        queryKey: ['ingredients_list'],
-        queryFn: async () => {
-            const response = await axios.get('/api/v1/ingredients/?limit=100')
-            return response.data.items
-        },
-        enabled: isOpen && activeTab === 'ingredient'
-    })
+
 
     // Fetch Recipes (for sub-recipes)
     const { data: recipesData } = useQuery({
@@ -88,145 +83,189 @@ export default function AddRecipeItemModal({ isOpen, onClose, recipeId }) {
         addItemMutation.mutate(data)
     }
 
+    const [isCreateIngredientOpen, setIsCreateIngredientOpen] = useState(false)
+
+    // Callback when new ingredient is created
+    const handleIngredientCreated = (newIngredient) => {
+        setIsCreateIngredientOpen(false)
+        // Auto-select the new ingredient
+        // Note: react-query invalidation in modal ensures list is updated
+        // We set the value after a small delay to ensure options re-render
+        setTimeout(() => {
+            setValue('ingredient_id', newIngredient.id)
+        }, 100)
+    }
+
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
-                <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-900">Agregar a la Receta</h2>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                        <X className="w-5 h-5 text-gray-500" />
-                    </button>
-                </div>
-
-                <div className="p-6">
-                    {/* Tabs */}
-                    <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
+        <>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+                    <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                        <h2 className="text-xl font-bold text-gray-900">Agregar a la Receta</h2>
                         <button
-                            type="button"
-                            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'ingredient'
-                                ? 'bg-white text-primary shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                            onClick={() => setActiveTab('ingredient')}
+                            onClick={onClose}
+                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                         >
-                            <Carrot className="w-4 h-4" />
-                            Ingrediente
-                        </button>
-                        <button
-                            type="button"
-                            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'recipe'
-                                ? 'bg-white text-purple-600 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                            onClick={() => setActiveTab('recipe')}
-                        >
-                            <ChefHat className="w-4 h-4" />
-                            Sub-receta
+                            <X className="w-5 h-5 text-gray-500" />
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                        {serverError && (
-                            <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm flex items-center gap-2">
-                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                <p>{serverError}</p>
-                            </div>
-                        )}
-
-                        {/* Item Selector */}
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-700">
-                                {activeTab === 'ingredient' ? 'Seleccionar Ingrediente' : 'Seleccionar Receta Base'}
-                            </label>
-                            <select
-                                className="input w-full"
-                                {...register(activeTab === 'ingredient' ? 'ingredient_id' : 'child_recipe_id', {
-                                    required: 'Debes seleccionar un item'
-                                })}
-                            >
-                                <option value="">Selecciona una opción...</option>
-                                {activeTab === 'ingredient' ? (
-                                    ingredientsData?.map(ing => (
-                                        <option key={ing.id} value={ing.id}>
-                                            {ing.name} ({ing.sku})
-                                        </option>
-                                    ))
-                                ) : (
-                                    recipesData?.map(r => (
-                                        <option key={r.id} value={r.id}>
-                                            {r.name}
-                                        </option>
-                                    ))
-                                )}
-                            </select>
-                        </div>
-
-                        {/* Quantity & Unit */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-gray-700">Cantidad</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    className="input w-full"
-                                    placeholder="0.00"
-                                    {...register('quantity', { required: true, min: 0.001 })}
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-gray-700">Unidad</label>
-                                <select
-                                    className="input w-full"
-                                    {...register('unit_id', { required: true })}
-                                >
-                                    <option value="">Unidad...</option>
-                                    {units?.map(u => (
-                                        <option key={u.id} value={u.id}>
-                                            {u.name} ({u.symbol})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Notes */}
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-700">Notas (Opcional)</label>
-                            <input
-                                type="text"
-                                className="input w-full"
-                                placeholder="Ej: Cortado en cubos, sin piel..."
-                                {...register('notes')}
-                            />
-                        </div>
-
-                        <div className="pt-4 flex items-center justify-end gap-3">
+                    <div className="p-6">
+                        {/* Tabs */}
+                        <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
                             <button
                                 type="button"
-                                onClick={onClose}
-                                className="btn btn-ghost text-gray-600"
+                                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'ingredient'
+                                    ? 'bg-white text-primary shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                onClick={() => setActiveTab('ingredient')}
                             >
-                                Cancelar
+                                <Carrot className="w-4 h-4" />
+                                Ingrediente
                             </button>
                             <button
-                                type="submit"
-                                disabled={addItemMutation.isPending}
-                                className={`btn flex items-center space-x-2 ${activeTab === 'ingredient' ? 'btn-primary' : 'bg-purple-600 hover:bg-purple-700 text-white'
+                                type="button"
+                                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'recipe'
+                                    ? 'bg-white text-purple-600 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
                                     }`}
+                                onClick={() => setActiveTab('recipe')}
                             >
-                                <Save className="w-4 h-4" />
-                                <span>{addItemMutation.isPending ? 'Agregando...' : 'Agregar Item'}</span>
+                                <ChefHat className="w-4 h-4" />
+                                Sub-receta
                             </button>
                         </div>
-                    </form>
+
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                            {serverError && (
+                                <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                    <p>{serverError}</p>
+                                </div>
+                            )}
+
+                            {/* Item Selector */}
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-gray-700">
+                                    {activeTab === 'ingredient' ? 'Seleccionar Ingrediente' : 'Seleccionar Receta Base'}
+                                </label>
+                                <div className="flex gap-2">
+                                    {activeTab === 'ingredient' ? (
+                                        <div className="w-full">
+                                            <Controller
+                                                name="ingredient_id"
+                                                control={control}
+                                                rules={{ required: 'Debes seleccionar un ingrediente' }}
+                                                render={({ field }) => (
+                                                    <SmartCombobox
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                        placeholder="Buscar por nombre, SKU..."
+                                                    />
+                                                )}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <select
+                                            className="input w-full"
+                                            {...register('child_recipe_id', {
+                                                required: 'Debes seleccionar una receta'
+                                            })}
+                                        >
+                                            <option value="">Selecciona una opción...</option>
+                                            {recipesData?.map(r => (
+                                                <option key={r.id} value={r.id}>
+                                                    {r.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+
+                                    {activeTab === 'ingredient' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsCreateIngredientOpen(true)}
+                                            className="btn btn-outline px-3 transition-colors hover:bg-primary-50 hover:text-primary hover:border-primary h-[42px]"
+                                            title="Crear nuevo ingrediente"
+                                        >
+                                            <Plus className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Quantity & Unit */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700">Cantidad</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className="input w-full"
+                                        placeholder="0.00"
+                                        {...register('quantity', { required: true, min: 0.001 })}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700">Unidad</label>
+                                    <select
+                                        className="input w-full"
+                                        {...register('unit_id', { required: true })}
+                                    >
+                                        <option value="">Unidad...</option>
+                                        {units?.map(u => (
+                                            <option key={u.id} value={u.id}>
+                                                {u.name} ({u.symbol})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-gray-700">Notas (Opcional)</label>
+                                <input
+                                    type="text"
+                                    className="input w-full"
+                                    placeholder="Ej: Cortado en cubos, sin piel..."
+                                    {...register('notes')}
+                                />
+                            </div>
+
+                            <div className="pt-4 flex items-center justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="btn btn-ghost text-gray-600"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={addItemMutation.isPending}
+                                    className={`btn flex items-center space-x-2 ${activeTab === 'ingredient' ? 'btn-primary' : 'bg-purple-600 hover:bg-purple-700 text-white'
+                                        }`}
+                                >
+                                    <Save className="w-4 h-4" />
+                                    <span>{addItemMutation.isPending ? 'Agregando...' : 'Agregar Item'}</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
+
+            {/* Quick Add Modal */}
+            <CreateIngredientModal
+                isOpen={isCreateIngredientOpen}
+                onClose={() => setIsCreateIngredientOpen(false)}
+                onSuccess={handleIngredientCreated}
+            />
+        </>
     )
 }
 

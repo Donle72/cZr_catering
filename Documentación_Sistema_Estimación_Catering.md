@@ -191,7 +191,7 @@ Siguiendo los estándares IEEE 29148 mencionados en la investigación 40, se def
 * **NFR-02 Seguridad:** Cumplimiento con estándares PCI-DSS para el manejo de tarjetas de crédito y encriptación AES-256 para datos sensibles de clientes.2  
 * **NFR-03 Rendimiento Offline:** La aplicación móvil debe permitir la visualización de órdenes de servicio y checklists operativos sin conexión a internet, sincronizando datos cuando se recupere la conectividad (Arquitectura "Offline-First").  
 * **NFR-04 Escalabilidad:** La base de datos debe soportar el crecimiento horizontal (sharding) para manejar históricos de transacciones de múltiples años sin degradación de velocidad de consulta.
-
+  
 ## ---
 
 **5\. Estrategias de UX/UI para Entornos de Alta Presión**

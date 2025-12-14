@@ -37,19 +37,19 @@ export default function Layout({ children }) {
 
             {/* Sidebar */}
             <aside className={`
-        fixed top-0 left-0 z-50 h-screen w-72 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900
+        fixed top-0 left-0 z-50 h-screen w-72 bg-gray-900 border-r border-gray-800
         transform transition-transform duration-300 ease-in-out lg:translate-x-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
                 {/* Logo */}
-                <div className="flex items-center justify-between h-20 px-6 border-b border-gray-700">
+                <div className="flex items-center justify-between h-20 px-6 border-b border-gray-800">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
                             <ChefHat className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-white">cZr Catering</h1>
-                            <p className="text-xs text-gray-400">Sistema de Gestión</p>
+                            <h1 className="text-xl font-bold text-white tracking-tight">cZr Catering</h1>
+                            <p className="text-xs text-gray-400 font-medium">BETA v0.9.1</p>
                         </div>
                     </div>
                     <button
@@ -61,7 +61,7 @@ export default function Layout({ children }) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="px-4 py-6 space-y-2">
+                <nav className="px-4 py-6 space-y-1">
                     {navigation.map((item) => {
                         const isActive = location.pathname === item.href
                         return (
@@ -70,14 +70,14 @@ export default function Layout({ children }) {
                                 to={item.href}
                                 onClick={() => setSidebarOpen(false)}
                                 className={`
-                  flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200
+                  flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200
                   ${isActive
-                                        ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-500/50'
-                                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                                        ? 'bg-primary-800 text-white border-l-4 border-primary-500'
+                                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                                     }
                 `}
                             >
-                                <item.icon className="w-5 h-5" />
+                                <item.icon className={`w-5 h-5 ${isActive ? 'text-primary-400' : ''}`} />
                                 <span className="font-medium">{item.name}</span>
                             </Link>
                         )
@@ -86,10 +86,13 @@ export default function Layout({ children }) {
 
                 {/* Bottom section */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
-                    <button className="flex items-center space-x-3 px-4 py-3 w-full text-gray-300 hover:bg-gray-800 hover:text-white rounded-xl transition-all">
+                    <Link
+                        to="/settings"
+                        className="flex items-center space-x-3 px-4 py-3 w-full text-gray-300 hover:bg-gray-800 hover:text-white rounded-xl transition-all"
+                    >
                         <Settings className="w-5 h-5" />
                         <span className="font-medium">Configuración</span>
-                    </button>
+                    </Link>
                     <button className="flex items-center space-x-3 px-4 py-3 w-full text-gray-300 hover:bg-gray-800 hover:text-white rounded-xl transition-all mt-2">
                         <LogOut className="w-5 h-5" />
                         <span className="font-medium">Cerrar Sesión</span>
