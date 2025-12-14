@@ -38,7 +38,11 @@ class Ingredient(Base):
     yield_factor = Column(Float, default=1.0, nullable=False)
     
     # Tax rate (e.g., 0.21 for 21% IVA)
-    tax_rate = Column(Float, default=0.0)
+    tax_rate = Column(Float, default=0.21) # IVA default 21%
+    
+    # Inventory Management (MVP)
+    stock_quantity = Column(Float, default=0.0)
+    min_stock_threshold = Column(Float, default=0.0)
     
     # Default supplier
     default_supplier_id = Column(Integer, ForeignKey("suppliers.id"))
@@ -72,3 +76,24 @@ class Ingredient(Base):
             return cost_per_usage_unit / yield_factor
         except Exception:
             return 0.0
+
+
+class IngredientPriceHistory(Base):
+    """
+    Log of price changes for ingredients to track inflation/variations
+    """
+    __tablename__ = "ingredient_price_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    ingredient_id = Column(Integer, ForeignKey("ingredients.id"), nullable=False)
+    
+    old_cost = Column(Float, nullable=False)
+    new_cost = Column(Float, nullable=False)
+    
+    # Optional: who made the change (if we had auth)
+    changed_by = Column(String(100), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationship
+    ingredient = relationship("Ingredient")

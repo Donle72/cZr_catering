@@ -5,11 +5,12 @@ import Ingredients from './pages/Ingredients'
 import Recipes from './pages/Recipes'
 import RecipeDetail from './pages/RecipeDetail'
 import Events from './pages/Events'
+import Production from './pages/Production'
 import Suppliers from './pages/Suppliers'
 
 function App() {
     return (
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Layout>
                 <Routes>
                     <Route path="/" element={<Dashboard />} />
@@ -17,6 +18,7 @@ function App() {
                     <Route path="/recipes" element={<Recipes />} />
                     <Route path="/recipes/:id" element={<RecipeDetail />} />
                     <Route path="/events" element={<Events />} />
+                    <Route path="/production" element={<Production />} />
                     <Route path="/suppliers" element={<Suppliers />} />
                 </Routes>
             </Layout>

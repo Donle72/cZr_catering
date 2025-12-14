@@ -37,3 +37,35 @@ def get_event(event_id: int, db: Session = Depends(get_db)):
         "margin": event.margin,
         "orders": event.orders
     }
+
+
+@router.post("/", response_model=dict)
+def create_event(
+    event: dict,
+    db: Session = Depends(get_db)
+):
+    """Create a new event"""
+    from app.services.event_service import EventService
+    return EventService.create_event(db, event)
+
+
+@router.post("/{event_id}/items", response_model=dict)
+def add_event_item(
+    event_id: int,
+    item: dict,
+    db: Session = Depends(get_db)
+):
+    """Add a recipe/item to an event (Using Service for Snapshots)"""
+    from app.services.event_service import EventService
+    
+    try:
+        # Manually parsing item dict for now, DTO would be better
+        return EventService.add_order_to_event(
+            db=db,
+            event_id=event_id,
+            recipe_id=item.get("recipe_id"),
+            quantity=item.get("quantity"),
+            unit_price_override=item.get("unit_price")
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
