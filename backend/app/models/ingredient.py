@@ -39,6 +39,11 @@ class Ingredient(Base):
     
     # Tax rate (e.g., 0.21 for 21% IVA)
     tax_rate = Column(Float, default=0.21) # IVA default 21%
+
+    # Scaling Logic (linear vs logarithmic)
+    # 'linear' = Direct usage (e.g. Flour x10 -> x10)
+    # 'logarithmic' = Non-linear (e.g. Salt x10 -> x7.07)
+    scaling_type = Column(String(50), default='linear')
     
     # Inventory Management (MVP)
     stock_quantity = Column(Float, default=0.0)

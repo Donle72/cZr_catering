@@ -15,6 +15,7 @@ from app.schemas.recipe import (
     RecipeResponse, 
     RecipeItemCreate
 )
+from app.services.recipe_service import RecipeService
 
 router = APIRouter()
 
@@ -59,7 +60,24 @@ def list_recipes(
         "total": total,
         "page": skip // limit + 1 if limit > 0 else 1,
         "pages": math.ceil(total / limit) if total > 0 and limit > 0 else 0
+    return {
+        "items": items,
+        "total": total,
+        "page": skip // limit + 1 if limit > 0 else 1,
+        "pages": math.ceil(total / limit) if total > 0 and limit > 0 else 0
     }
+
+@router.get("/{recipe_id}/scale")
+def scale_recipe(
+    recipe_id: int, 
+    target_quantity: float = Query(..., gt=0, description="Target yield quantity"), 
+    db: Session = Depends(get_db)
+):
+    """
+    Calculates required ingredients for a specific yield quantity.
+    Uses non-linear scaling for specific ingredients (Salt/Spices).
+    """
+    return RecipeService.scale_recipe(db, recipe_id, target_quantity)
 
 @router.post("/", response_model=RecipeResponse, status_code=201)
 def create_recipe(
