@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.asset import Asset, AssetState
+from app.models.event_asset import EventAsset
 from fastapi import HTTPException
 
 class AssetService:
@@ -34,4 +35,28 @@ class AssetService:
         db.commit()
         db.refresh(asset)
         return asset
+
+    @staticmethod
+    def assign_to_event(db: Session, event_id: int, asset_id: int, quantity: int):
+        # 1. Check availability
+        AssetService.check_availability(db, asset_id, quantity)
+        
+        # 2. Check if already assigned
+        existing = db.query(EventAsset).filter(
+            EventAsset.event_id == event_id,
+            EventAsset.asset_id == asset_id
+        ).first()
+        
+        if existing:
+            existing.quantity += quantity # Add to existing assignment
+        else:
+            new_assignment = EventAsset(
+                event_id=event_id,
+                asset_id=asset_id,
+                quantity=quantity
+            )
+            db.add(new_assignment)
+            
+        db.commit()
+        return {"status": "assigned", "asset_id": asset_id, "event_id": event_id, "quantity": quantity}
 

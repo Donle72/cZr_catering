@@ -15,6 +15,11 @@ class AssetCreate(BaseModel):
     total_quantity: int
     purchase_price: float = 0.0
 
+class AssetAssign(BaseModel):
+    event_id: int
+    asset_id: int
+    quantity: int
+
 class AssetResponse(AssetCreate):
     id: int
     state: str
@@ -47,3 +52,11 @@ def check_availability(
     """Check if we have enough stock of an asset"""
     available = AssetService.check_availability(db, asset_id, quantity)
     return {"available": available}
+
+@router.post("/assign")
+def assign_asset_to_event(
+    assignment: AssetAssign,
+    db: Session = Depends(get_db)
+):
+    """Assign an asset to an event (deducting reliability from stock logic to be implemented)"""
+    return AssetService.assign_to_event(db, assignment.event_id, assignment.asset_id, assignment.quantity)
