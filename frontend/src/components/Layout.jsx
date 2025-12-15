@@ -17,8 +17,10 @@ const navigation = [
     { name: 'Ingredientes', href: '/ingredients', icon: Package },
     { name: 'Recetas', href: '/recipes', icon: ChefHat },
     { name: 'Eventos', href: '/events', icon: Calendar },
-    { name: 'Producción', href: '/production', icon: ChefHat },
+
+
     { name: 'Proveedores', href: '/suppliers', icon: Truck },
+    { name: 'Activos', href: '/assets', icon: Package },
 ]
 
 export default function Layout({ children }) {

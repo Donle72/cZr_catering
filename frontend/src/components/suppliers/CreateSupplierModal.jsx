@@ -4,63 +4,59 @@ import { X, Save, AlertCircle } from 'lucide-react'
 import axios from 'axios'
 import PropTypes from 'prop-types'
 
-export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingredientToEdit = null }) {
+export default function CreateSupplierModal({ isOpen, onClose, onSuccess, supplierToEdit = null }) {
     const queryClient = useQueryClient()
     const [serverError, setServerError] = useState('')
-    const isEditing = !!ingredientToEdit
+    const isEditing = !!supplierToEdit
 
     // Initial state
     const initialState = {
         name: '',
-        sku: '',
-        category: 'Vegetales',
-        purchase_unit_id: 1, // Default to KG
-        usage_unit_id: 2,   // Default to G
-        conversion_ratio: 1000,
-        current_cost: 0,
-        yield_factor: 1.0,
-        tax_rate: 0.21,
-        stock_quantity: 0,
-        min_stock_threshold: 0
+        contact_name: '',
+        email: '',
+        phone: '',
+        address: '',
+        tax_id: '',
+        currency_code: 'ARS',
+        payment_terms: '',
+        lead_time_days: 1,
+        minimum_order: 0,
+        notes: ''
     }
 
     const [newItem, setNewItem] = useState(initialState)
 
-    // Reset or populate form when opening/changing capability
+    // Reset or populate form
     useEffect(() => {
         if (isOpen) {
-            if (ingredientToEdit) {
+            if (supplierToEdit) {
                 setNewItem({
                     ...initialState,
-                    ...ingredientToEdit,
-                    // Ensure numeric fields are properly handled if they come as strings
-                    current_cost: Number(ingredientToEdit.current_cost),
-                    yield_factor: Number(ingredientToEdit.yield_factor),
-                    conversion_ratio: Number(ingredientToEdit.conversion_ratio)
+                    ...supplierToEdit,
+                    // Ensure numeric fields are numbers
+                    lead_time_days: Number(supplierToEdit.lead_time_days || 1),
+                    minimum_order: Number(supplierToEdit.minimum_order || 0)
                 })
             } else {
                 setNewItem(initialState)
             }
             setServerError('')
         }
-    }, [isOpen, ingredientToEdit])
+    }, [isOpen, supplierToEdit])
 
-
-    const categories = ['Carnes', 'Vegetales', 'Lácteos', 'Granos', 'Especias', 'Bebidas']
 
     const mutation = useMutation({
         mutationFn: async (data) => {
             if (isEditing) {
-                const response = await axios.put(`/api/v1/ingredients/${ingredientToEdit.id}`, data)
+                const response = await axios.put(`/api/v1/suppliers/${supplierToEdit.id}`, data)
                 return response.data
             } else {
-                const response = await axios.post('/api/v1/ingredients/', data)
+                const response = await axios.post('/api/v1/suppliers/', data)
                 return response.data
             }
         },
         onSuccess: (data) => {
-            queryClient.invalidateQueries(['ingredients'])
-            queryClient.invalidateQueries(['ingredients_list'])
+            queryClient.invalidateQueries(['suppliers'])
             setServerError('')
             if (onSuccess) {
                 onSuccess(data)
@@ -69,7 +65,7 @@ export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingr
             }
         },
         onError: (error) => {
-            setServerError(error.response?.data?.detail || 'Error al guardar ingrediente')
+            setServerError(error.response?.data?.detail || 'Error al guardar proveedor')
         }
     })
 
@@ -85,7 +81,7 @@ export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingr
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-2xl font-bold">{isEditing ? 'Editar Ingrediente' : 'Nuevo Ingrediente'}</h2>
+                        <h2 className="text-2xl font-bold">{isEditing ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h2>
                         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
                             <X className="w-5 h-5 text-gray-500" />
                         </button>
@@ -101,7 +97,7 @@ export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingr
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="label">Nombre</label>
+                                <label className="label">Nombre Empresa</label>
                                 <input
                                     required
                                     className="input w-full"
@@ -110,70 +106,74 @@ export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingr
                                 />
                             </div>
                             <div>
-                                <label className="label">SKU</label>
+                                <label className="label">Contacto (Persona)</label>
                                 <input
                                     className="input w-full"
-                                    value={newItem.sku}
-                                    onChange={e => setNewItem({ ...newItem, sku: e.target.value })}
+                                    value={newItem.contact_name}
+                                    onChange={e => setNewItem({ ...newItem, contact_name: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="label">Categoría</label>
+                                <label className="label">Email</label>
+                                <input
+                                    type="email"
+                                    className="input w-full"
+                                    value={newItem.email}
+                                    onChange={e => setNewItem({ ...newItem, email: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Teléfono</label>
+                                <input
+                                    className="input w-full"
+                                    value={newItem.phone}
+                                    onChange={e => setNewItem({ ...newItem, phone: e.target.value })}
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="label">Dirección</label>
+                                <input
+                                    className="input w-full"
+                                    value={newItem.address}
+                                    onChange={e => setNewItem({ ...newItem, address: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="label">CUIT / Tax ID</label>
+                                <input
+                                    className="input w-full"
+                                    value={newItem.tax_id}
+                                    onChange={e => setNewItem({ ...newItem, tax_id: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Moneda Principal</label>
                                 <select
                                     className="input w-full"
-                                    value={newItem.category}
-                                    onChange={e => setNewItem({ ...newItem, category: e.target.value })}
+                                    value={newItem.currency_code}
+                                    onChange={e => setNewItem({ ...newItem, currency_code: e.target.value })}
                                 >
-                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                    <option value="ARS">ARS - Pesos Argentinos</option>
+                                    <option value="USD">USD - Dólares</option>
+                                    <option value="EUR">EUR - Euros</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="label">Costo de Compra ($)</label>
+                                <label className="label">Días de Entrega (Lead Time)</label>
                                 <input
                                     type="number"
-                                    step="0.01"
                                     className="input w-full"
-                                    value={newItem.current_cost}
-                                    onChange={e => setNewItem({ ...newItem, current_cost: parseFloat(e.target.value) })}
+                                    value={newItem.lead_time_days}
+                                    onChange={e => setNewItem({ ...newItem, lead_time_days: parseInt(e.target.value) || 0 })}
                                 />
                             </div>
                             <div>
-                                <label className="label">Ratio Conversión</label>
+                                <label className="label">Pedido Mínimo ($)</label>
                                 <input
                                     type="number"
                                     className="input w-full"
-                                    value={newItem.conversion_ratio}
-                                    onChange={e => setNewItem({ ...newItem, conversion_ratio: parseFloat(e.target.value) })}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Ej: 1000 si compras Kg y usas gramos</p>
-                            </div>
-                            <div>
-                                <label className="label">Factor Rendimiento (0-1)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    max="1"
-                                    className="input w-full"
-                                    value={newItem.yield_factor}
-                                    onChange={e => setNewItem({ ...newItem, yield_factor: parseFloat(e.target.value) })}
-                                />
-                            </div>
-                            <div>
-                                <label className="label">Stock Actual</label>
-                                <input
-                                    type="number"
-                                    className="input w-full"
-                                    value={newItem.stock_quantity}
-                                    onChange={e => setNewItem({ ...newItem, stock_quantity: parseFloat(e.target.value) })}
-                                />
-                            </div>
-                            <div>
-                                <label className="label">Min. Stock Alerta</label>
-                                <input
-                                    type="number"
-                                    className="input w-full"
-                                    value={newItem.min_stock_threshold}
-                                    onChange={e => setNewItem({ ...newItem, min_stock_threshold: parseFloat(e.target.value) })}
+                                    value={newItem.minimum_order}
+                                    onChange={e => setNewItem({ ...newItem, minimum_order: parseFloat(e.target.value) || 0 })}
                                 />
                             </div>
                         </div>
@@ -201,9 +201,9 @@ export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingr
     )
 }
 
-CreateIngredientModal.propTypes = {
+CreateSupplierModal.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
     onSuccess: PropTypes.func,
-    ingredientToEdit: PropTypes.object
+    supplierToEdit: PropTypes.object
 }

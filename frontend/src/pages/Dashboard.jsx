@@ -101,7 +101,7 @@ export default function Dashboard() {
             <div className="card">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-gray-900">Próximos Eventos</h2>
-                    <button className="btn btn-primary text-sm">
+                    <button type="button" onClick={() => console.log('Button clicked')} className="btn btn-primary text-sm">
                         Ver Todos
                     </button>
                 </div>
@@ -134,7 +134,7 @@ export default function Dashboard() {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <button className="card-hover text-left group">
+                <button type="button" onClick={() => console.log('Button clicked')} className="card-hover text-left group">
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
                         <Calendar className="w-6 h-6" />
                     </div>
@@ -142,7 +142,7 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-600">Crear una nueva cotización o evento</p>
                 </button>
 
-                <button className="card-hover text-left group">
+                <button type="button" onClick={() => console.log('Button clicked')} className="card-hover text-left group">
                     <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
                         <ChefHat className="w-6 h-6" />
                     </div>
@@ -150,7 +150,7 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-600">Agregar una receta al sistema</p>
                 </button>
 
-                <button className="card-hover text-left group">
+                <button type="button" onClick={() => console.log('Button clicked')} className="card-hover text-left group">
                     <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
                         <Package className="w-6 h-6" />
                     </div>

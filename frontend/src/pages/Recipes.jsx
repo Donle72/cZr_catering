@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { Plus, ChefHat, DollarSign, Clock, Search, TrendingUp, AlertCircle } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { Plus, ChefHat, DollarSign, Clock, Search, TrendingUp, AlertCircle, Edit, Trash2 } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
 import CreateRecipeModal from '../components/recipes/CreateRecipeModal'
 
 export default function Recipes() {
+    const queryClient = useQueryClient()
     const [searchTerm, setSearchTerm] = useState('')
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [editingRecipe, setEditingRecipe] = useState(null)
 
     // Fetch recipes
     const { data: recipesData, isLoading, error } = useQuery({
@@ -22,6 +24,34 @@ export default function Recipes() {
     })
 
     const recipes = recipesData?.items || []
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id) => {
+            await axios.delete(`/api/v1/recipes/${id}`)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['recipes'])
+        },
+        onError: (error) => {
+            alert('Error al eliminar: ' + (error.response?.data?.detail || error.message))
+        }
+    })
+
+    const handleEdit = (recipe) => {
+        setEditingRecipe(recipe)
+        setIsCreateModalOpen(true)
+    }
+
+    const handleDelete = (id) => {
+        if (window.confirm('¿Estás seguro de eliminar esta receta?')) {
+            deleteMutation.mutate(id)
+        }
+    }
+
+    const handleCloseModal = () => {
+        setIsCreateModalOpen(false)
+        setEditingRecipe(null)
+    }
 
     // Calculate stats
     const totalRecipes = recipesData?.total || 0
@@ -68,7 +98,7 @@ export default function Recipes() {
                 </div>
                 <button
                     className="btn btn-primary flex items-center space-x-2"
-                    onClick={() => setIsCreateModalOpen(true)}
+                    onClick={() => { setEditingRecipe(null); setIsCreateModalOpen(true); }}
                 >
                     <Plus className="w-5 h-5" />
                     <span>Nueva Receta</span>
@@ -148,7 +178,7 @@ export default function Recipes() {
                         <p>No se encontraron recetas</p>
                         <button
                             className="text-primary font-medium hover:underline mt-2"
-                            onClick={() => setIsCreateModalOpen(true)}
+                            onClick={() => { setEditingRecipe(null); setIsCreateModalOpen(true); }}
                         >
                             Crear tu primera receta
                         </button>
@@ -195,13 +225,30 @@ export default function Recipes() {
                                                 {Math.round(recipe.target_margin * 100)}%
                                             </span>
                                         </td>
-                                        <td className="py-4 px-4 text-center">
-                                            <Link
-                                                to={`/recipes/${recipe.id}`}
-                                                className="text-gray-400 hover:text-primary transition-colors flex items-center justify-center"
-                                            >
-                                                Ver Detalle
-                                            </Link>
+                                        <td className="py-4 px-4">
+                                            <div className="flex items-center justify-center space-x-2">
+                                                <Link
+                                                    to={`/recipes/${recipe.id}`}
+                                                    className="p-2 text-gray-400 hover:text-primary transition-colors"
+                                                    title="Ver Detalle"
+                                                >
+                                                    <Search className="w-4 h-4" />
+                                                </Link>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(recipe); }}
+                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Editar"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(recipe.id); }}
+                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Eliminar"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -213,7 +260,8 @@ export default function Recipes() {
 
             <CreateRecipeModal
                 isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
+                onClose={handleCloseModal}
+                recipeToEdit={editingRecipe}
             />
         </div>
     )

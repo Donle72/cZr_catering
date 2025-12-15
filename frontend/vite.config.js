@@ -9,7 +9,7 @@ export default defineConfig({
     port: 3020,
     proxy: {
       '/api': {
-        target: 'http://backend:8020',
+        target: process.env.BACKEND_URL || 'http://127.0.0.1:8020',
         changeOrigin: true,
       }
     }

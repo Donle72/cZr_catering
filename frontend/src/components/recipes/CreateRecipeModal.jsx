@@ -5,11 +5,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import PropTypes from 'prop-types';
 
-export default function CreateRecipeModal({ isOpen, onClose }) {
+export default function CreateRecipeModal({ isOpen, onClose, recipeToEdit = null }) {
     const queryClient = useQueryClient()
     const [serverError, setServerError] = useState('')
+    const isEditing = !!recipeToEdit
 
-    const { register, handleSubmit, reset, formState: { errors, points } } = useForm({
+    const { register, handleSubmit, reset, formState: { errors } } = useForm({
         defaultValues: {
             name: '',
             description: '',
@@ -21,10 +22,43 @@ export default function CreateRecipeModal({ isOpen, onClose }) {
         }
     })
 
-    const createRecipeMutation = useMutation({
+    // Reset form when modal opens or recipeToEdit changes
+    useEffect(() => {
+        if (isOpen) {
+            if (recipeToEdit) {
+                reset({
+                    name: recipeToEdit.name,
+                    description: recipeToEdit.description || '',
+                    recipe_type: recipeToEdit.recipe_type,
+                    yield_quantity: recipeToEdit.yield_quantity,
+                    target_margin: recipeToEdit.target_margin,
+                    preparation_time: recipeToEdit.preparation_time,
+                    shelf_life_hours: recipeToEdit.shelf_life_hours
+                })
+            } else {
+                reset({
+                    name: '',
+                    description: '',
+                    recipe_type: 'final_dish',
+                    yield_quantity: 1,
+                    target_margin: 0.35,
+                    preparation_time: 0,
+                    shelf_life_hours: 24
+                })
+            }
+            setServerError('')
+        }
+    }, [isOpen, recipeToEdit, reset])
+
+    const mutation = useMutation({
         mutationFn: async (data) => {
-            const response = await axios.post('/api/v1/recipes/', data)
-            return response.data
+            if (isEditing) {
+                const response = await axios.put(`/api/v1/recipes/${recipeToEdit.id}`, data)
+                return response.data
+            } else {
+                const response = await axios.post('/api/v1/recipes/', data)
+                return response.data
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['recipes'])
@@ -33,13 +67,13 @@ export default function CreateRecipeModal({ isOpen, onClose }) {
             setServerError('')
         },
         onError: (error) => {
-            setServerError(error.response?.data?.detail || 'Error al crear la receta')
+            setServerError(error.response?.data?.detail || 'Error al guardar la receta')
         }
     })
 
     const onSubmit = (data) => {
         setServerError('')
-        createRecipeMutation.mutate({
+        mutation.mutate({
             ...data,
             yield_quantity: parseFloat(data.yield_quantity),
             target_margin: parseFloat(data.target_margin),
@@ -54,7 +88,7 @@ export default function CreateRecipeModal({ isOpen, onClose }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-900">Nueva Receta</h2>
+                    <h2 className="text-xl font-bold text-gray-900">{isEditing ? 'Editar Receta' : 'Nueva Receta'}</h2>
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -164,11 +198,11 @@ export default function CreateRecipeModal({ isOpen, onClose }) {
                         </button>
                         <button
                             type="submit"
-                            disabled={createRecipeMutation.isPending}
+                            disabled={mutation.isPending}
                             className="btn btn-primary flex items-center space-x-2"
                         >
                             <Save className="w-4 h-4" />
-                            <span>{createRecipeMutation.isPending ? 'Guardando...' : 'Crear Receta'}</span>
+                            <span>{mutation.isPending ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear Receta')}</span>
                         </button>
                     </div>
                 </form>
@@ -179,5 +213,6 @@ export default function CreateRecipeModal({ isOpen, onClose }) {
 
 CreateRecipeModal.propTypes = {
     isOpen: PropTypes.bool.isRequired,
-    onClose: PropTypes.func.isRequired
+    onClose: PropTypes.func.isRequired,
+    recipeToEdit: PropTypes.object
 };

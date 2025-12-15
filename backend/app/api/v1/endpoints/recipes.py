@@ -60,12 +60,8 @@ def list_recipes(
         "total": total,
         "page": skip // limit + 1 if limit > 0 else 1,
         "pages": math.ceil(total / limit) if total > 0 and limit > 0 else 0
-    return {
-        "items": items,
-        "total": total,
-        "page": skip // limit + 1 if limit > 0 else 1,
-        "pages": math.ceil(total / limit) if total > 0 and limit > 0 else 0
     }
+
 
 @router.get("/{recipe_id}/scale")
 def scale_recipe(

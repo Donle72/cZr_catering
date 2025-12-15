@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Search, Filter, TrendingUp, DollarSign, Edit, Trash2 } from 'lucide-react'
 import axios from 'axios'
 import CreateIngredientModal from '../components/ingredients/CreateIngredientModal'
 
 export default function Ingredients() {
+    const queryClient = useQueryClient()
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategory, setSelectedCategory] = useState('')
+    const [editingIngredient, setEditingIngredient] = useState(null)
 
     // Fetch ingredients
     const { data, isLoading, error } = useQuery({
@@ -21,6 +23,35 @@ export default function Ingredients() {
         }
     })
 
+    const deleteMutation = useMutation({
+        mutationFn: async (id) => {
+            await axios.delete(`/api/v1/ingredients/${id}`)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['ingredients'])
+            queryClient.invalidateQueries(['ingredients_list'])
+        },
+        onError: (error) => {
+            alert('Error al eliminar: ' + (error.response?.data?.detail || error.message))
+        }
+    })
+
+    const handleEdit = (ingredient) => {
+        setEditingIngredient(ingredient)
+        setIsModalOpen(true)
+    }
+
+    const handleDelete = (id) => {
+        if (window.confirm('¿Estás seguro de eliminar este ingrediente?')) {
+            deleteMutation.mutate(id)
+        }
+    }
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false)
+        setEditingIngredient(null)
+    }
+
     const categories = ['Carnes', 'Vegetales', 'Lácteos', 'Granos', 'Especias', 'Bebidas']
 
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -34,7 +65,7 @@ export default function Ingredients() {
                     <p className="text-gray-600">Gestiona tu inventario con control de rendimiento y costos</p>
                 </div>
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => { setEditingIngredient(null); setIsModalOpen(true); }}
                     className="btn btn-primary flex items-center space-x-2"
                 >
                     <Plus className="w-5 h-5" />
@@ -45,7 +76,11 @@ export default function Ingredients() {
             {/* Modal */}
             <CreateIngredientModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={handleCloseModal}
+                ingredientToEdit={editingIngredient}
+                onSuccess={(data) => {
+                    handleCloseModal()
+                }}
             />
 
             {/* Filters */}
@@ -208,10 +243,18 @@ export default function Ingredients() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end space-x-2">
-                                                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                    <button
+                                                        onClick={() => handleEdit(ingredient)}
+                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        title="Editar"
+                                                    >
                                                         <Edit className="w-4 h-4" />
                                                     </button>
-                                                    <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                                    <button
+                                                        onClick={() => handleDelete(ingredient.id)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Eliminar"
+                                                    >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>

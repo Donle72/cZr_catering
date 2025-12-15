@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Plus, Calendar, Users, DollarSign, ArrowRight } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Plus, Calendar, Users, DollarSign, ArrowRight, Edit, Trash2 } from 'lucide-react'
 import axios from 'axios'
 import CreateEventModal from '../components/events/CreateEventModal'
 import { Link } from 'react-router-dom'
 
 export default function Events() {
+    const queryClient = useQueryClient()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [editingEvent, setEditingEvent] = useState(null)
 
     // Fetch Events
     const { data: events, isLoading, error } = useQuery({
@@ -16,6 +18,34 @@ export default function Events() {
             return res.data
         }
     })
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id) => {
+            await axios.delete(`/api/v1/events/${id}`)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['events'])
+        },
+        onError: (error) => {
+            alert('Error al eliminar evento: ' + (error.response?.data?.detail || error.message))
+        }
+    })
+
+    const handleEdit = (event) => {
+        setEditingEvent(event)
+        setIsCreateModalOpen(true)
+    }
+
+    const handleDelete = (id) => {
+        if (window.confirm('¿Estás seguro de eliminar este evento?')) {
+            deleteMutation.mutate(id)
+        }
+    }
+
+    const handleCloseModal = () => {
+        setIsCreateModalOpen(false)
+        setEditingEvent(null)
+    }
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('es-AR', {
@@ -45,7 +75,7 @@ export default function Events() {
                     <p className="text-gray-600">Gestiona tus eventos, cotizaciones y fechas.</p>
                 </div>
                 <button
-                    onClick={() => setIsCreateModalOpen(true)}
+                    onClick={() => { setEditingEvent(null); setIsCreateModalOpen(true); }}
                     className="btn btn-primary flex items-center space-x-2"
                 >
                     <Plus className="w-5 h-5" />
@@ -101,7 +131,7 @@ export default function Events() {
                         <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                         <p className="text-gray-500 mb-4">No tienes eventos registrados aún.</p>
                         <button
-                            onClick={() => setIsCreateModalOpen(true)}
+                            onClick={() => { setEditingEvent(null); setIsCreateModalOpen(true); }}
                             className="text-primary font-medium hover:underline"
                         >
                             Crear mi primer evento
@@ -121,7 +151,7 @@ export default function Events() {
                             </thead>
                             <tbody>
                                 {events.map(event => (
-                                    <tr key={event.id} className="border-b border-gray-50 hover:bg-gray-50 text-sm transition-colors">
+                                    <tr key={event.id} className="border-b border-gray-50 hover:bg-gray-50 text-sm transition-colors cursor-pointer" onClick={() => handleEdit(event)}>
                                         <td className="py-4 px-4">
                                             <div className="font-bold text-gray-900">{event.name}</div>
                                             <div className="text-xs text-gray-500">{event.client_name}</div>
@@ -142,14 +172,30 @@ export default function Events() {
                                             </span>
                                         </td>
                                         <td className="py-4 px-4 text-right">
-                                            <Link
-                                                // TODO: Create Event Detail Page
-                                                to={`#`}
-                                                className="inline-flex items-center text-sm font-medium text-primary hover:text-primary-700"
-                                            >
-                                                Ver Detalles
-                                                <ArrowRight className="w-4 h-4 ml-1" />
-                                            </Link>
+                                            <div className="flex items-center justify-end space-x-2">
+                                                <Link
+                                                    to={`/events/${event.id}`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="p-2 text-gray-400 hover:text-primary transition-colors"
+                                                    title="Ver Detalles"
+                                                >
+                                                    <ArrowRight className="w-4 h-4" />
+                                                </Link>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(event); }}
+                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Editar"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(event.id); }}
+                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Eliminar"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -161,7 +207,8 @@ export default function Events() {
 
             <CreateEventModal
                 isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
+                onClose={handleCloseModal}
+                eventToEdit={editingEvent}
             />
         </div>
     )

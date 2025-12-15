@@ -12,6 +12,13 @@ class EventService:
 
     @staticmethod
     def create_event(db: Session, event_data: dict) -> Event:
+        # Generate ID if not present
+        if "event_number" not in event_data:
+            # Simple generation strategy: EVT-YYYYMMDD-HHMMSS
+            # In production, this should be an atomic sequence
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            event_data["event_number"] = f"EVT-{timestamp}"
+            
         event = Event(**event_data)
         db.add(event)
         db.commit()
