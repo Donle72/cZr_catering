@@ -23,7 +23,9 @@ class EstimationResult(BaseModel):
     wine_bottles: float
     champagne_bottles: float
     beer_liters: float
+    beer_liters: float
     ice_kg: float
+    finger_food_pieces: int
 
 class EstimationService:
     @staticmethod
@@ -83,10 +85,24 @@ class EstimationService:
         # Ice is total per person estimates
         total_ice = request.guest_count * ice_factor_per_pax
         
+        # 4. Finger Food Estimation (Pieces per person)
+        # Cocktail Heavy: 12-16 pieces (avg 14)
+        # Cocktail Light: 4-6 pieces (avg 5)
+        # We can infer type from duration? 
+        # > 3 hours = Heavy, < 3 hours = Light
+        pieces_per_person = 5 if request.duration_hours < 3 else 14
+        
+        # Adjust for event type
+        if request.event_type == EventType.CORPORATE:
+            pieces_per_person = max(3, pieces_per_person - 2) # Corporate eat less?
+        
+        total_pices = request.guest_count * pieces_per_person
+
         return EstimationResult(
             soft_drinks_liters=round(total_soft_drinks, 1),
             wine_bottles=round(total_wine, 1),
             champagne_bottles=round(total_champagne, 1),
             beer_liters=round(total_beer, 1),
-            ice_kg=round(total_ice, 1)
+            ice_kg=round(total_ice, 1),
+            finger_food_pieces=int(total_pices)
         )
