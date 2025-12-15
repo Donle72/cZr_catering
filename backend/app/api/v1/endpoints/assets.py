@@ -1,0 +1,49 @@
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from typing import List
+from pydantic import BaseModel
+
+from app.core.database import get_db
+from app.models.asset import Asset
+from app.services.asset_service import AssetService
+
+router = APIRouter()
+
+class AssetCreate(BaseModel):
+    name: str
+    category: str
+    total_quantity: int
+    purchase_price: float = 0.0
+
+class AssetResponse(AssetCreate):
+    id: int
+    state: str
+    
+    class Config:
+        from_attributes = True
+
+@router.post("/", response_model=AssetResponse)
+def create_asset(asset: AssetCreate, db: Session = Depends(get_db)):
+    """Create a new physical asset"""
+    return AssetService.create_asset(db, asset.model_dump())
+
+@router.get("/", response_model=List[AssetResponse])
+def list_assets(
+    category: str = Query(None),
+    db: Session = Depends(get_db)
+):
+    """List assets, optionally filtered by category"""
+    query = db.query(Asset)
+    if category:
+        query = query.filter(Asset.category == category)
+    return query.all()
+
+@router.post("/{asset_id}/check-availability")
+def check_availability(
+    asset_id: int, 
+    quantity: int = Query(..., gt=0), 
+    db: Session = Depends(get_db)
+):
+    """Check if we have enough stock of an asset"""
+    available = AssetService.check_availability(db, asset_id, quantity)
+    return {"available": available}
