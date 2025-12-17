@@ -3,13 +3,15 @@ Units API endpoints
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from typing import List
 from app.core.database import get_db
 from app.models.unit import Unit, UnitCategory
+from app.schemas.unit import UnitResponse
 
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("/", response_model=List[UnitResponse])
 def list_units(db: Session = Depends(get_db)):
     """List all units"""
     units = db.query(Unit).all()

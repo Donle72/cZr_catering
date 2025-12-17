@@ -7,6 +7,7 @@ import PropTypes from 'prop-types'
 export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingredientToEdit = null }) {
     const queryClient = useQueryClient()
     const [serverError, setServerError] = useState('')
+    const [units, setUnits] = useState([])
     const isEditing = !!ingredientToEdit
 
     // Initial state
@@ -14,9 +15,10 @@ export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingr
         name: '',
         sku: '',
         category: 'Vegetales',
-        purchase_unit_id: 1, // Default to KG
-        usage_unit_id: 2,   // Default to G
+        purchase_unit_id: '', // Will be selected from dropdown
+        usage_unit_id: '',   // Will be selected from dropdown
         conversion_ratio: 1000,
+        conversion_unit: '', // Will be selected from dropdown
         current_cost: 0,
         yield_factor: 1.0,
         tax_rate: 0.21,
@@ -25,6 +27,19 @@ export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingr
     }
 
     const [newItem, setNewItem] = useState(initialState)
+
+    // Fetch units on mount
+    useEffect(() => {
+        const fetchUnits = async () => {
+            try {
+                const response = await axios.get('/api/v1/units/')
+                setUnits(response.data)
+            } catch (error) {
+                console.error('Error fetching units:', error)
+            }
+        }
+        fetchUnits()
+    }, [])
 
     // Reset or populate form when opening/changing capability
     useEffect(() => {
@@ -36,7 +51,10 @@ export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingr
                     // Ensure numeric fields are properly handled if they come as strings
                     current_cost: Number(ingredientToEdit.current_cost),
                     yield_factor: Number(ingredientToEdit.yield_factor),
-                    conversion_ratio: Number(ingredientToEdit.conversion_ratio)
+                    conversion_ratio: Number(ingredientToEdit.conversion_ratio),
+                    purchase_unit_id: ingredientToEdit.purchase_unit_id || '',
+                    usage_unit_id: ingredientToEdit.usage_unit_id || '',
+                    conversion_unit: ingredientToEdit.conversion_unit || ''
                 })
             } else {
                 setNewItem(initialState)
@@ -128,6 +146,38 @@ export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingr
                                 </select>
                             </div>
                             <div>
+                                <label className="label">Unidad de Compra *</label>
+                                <select
+                                    required
+                                    className="input w-full"
+                                    value={newItem.purchase_unit_id}
+                                    onChange={e => setNewItem({ ...newItem, purchase_unit_id: parseInt(e.target.value) })}
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    {units.map(unit => (
+                                        <option key={unit.id} value={unit.id}>
+                                            {unit.name} ({unit.abbreviation})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="label">Unidad de Uso *</label>
+                                <select
+                                    required
+                                    className="input w-full"
+                                    value={newItem.usage_unit_id}
+                                    onChange={e => setNewItem({ ...newItem, usage_unit_id: parseInt(e.target.value) })}
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    {units.map(unit => (
+                                        <option key={unit.id} value={unit.id}>
+                                            {unit.name} ({unit.abbreviation})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
                                 <label className="label">Costo de Compra ($)</label>
                                 <input
                                     type="number"
@@ -146,6 +196,22 @@ export default function CreateIngredientModal({ isOpen, onClose, onSuccess, ingr
                                     onChange={e => setNewItem({ ...newItem, conversion_ratio: parseFloat(e.target.value) })}
                                 />
                                 <p className="text-xs text-gray-500 mt-1">Ej: 1000 si compras Kg y usas gramos</p>
+                            </div>
+                            <div>
+                                <label className="label">Unidad de Conversión *</label>
+                                <select
+                                    required
+                                    className="input w-full"
+                                    value={newItem.conversion_unit}
+                                    onChange={e => setNewItem({ ...newItem, conversion_unit: e.target.value })}
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    {units.map(unit => (
+                                        <option key={unit.abbreviation} value={unit.abbreviation}>
+                                            {unit.abbreviation} - {unit.display_name}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div>
                                 <label className="label">Factor Rendimiento (0-1)</label>
