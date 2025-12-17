@@ -210,6 +210,9 @@ export default function Ingredients() {
                                         Costo
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Ratio Conversión
+                                    </th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Rendimiento
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -242,24 +245,17 @@ export default function Ingredients() {
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
                                                 ${ingredient.current_cost.toFixed(2)}
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
-                                                        <div
-                                                            className="bg-green-500 h-2 rounded-full"
-                                                            style={{ width: `${ingredient.yield_factor * 100}%` }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-sm font-medium text-gray-700">
-                                                        {(ingredient.yield_factor * 100).toFixed(0)}%
-                                                    </span>
-                                                </div>
+                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                                {ingredient.conversion_ratio} {ingredient.conversion_unit || ''}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-medium text-gray-700">
+                                                {(ingredient.yield_factor * 100).toFixed(0)}%
                                             </td>
                                             <td className="px-6 py-4 text-sm font-bold text-primary-600">
-                                                ${ingredient.real_cost_per_usage_unit.toFixed(2)}
+                                                ${ingredient.real_cost_per_usage_unit.toFixed(2)} x {ingredient.conversion_unit || 'unit'}
                                             </td>
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                                {ingredient.stock_quantity || 0}
+                                                {ingredient.stock_quantity || 0} {ingredient.purchase_unit?.abbreviation || ''}
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end space-x-2">

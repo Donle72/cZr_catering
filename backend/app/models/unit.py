@@ -28,8 +28,13 @@ class Unit(Base):
     __tablename__ = "units"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(50), unique=True, nullable=False)  # "Kilogram", "Liter"
-    abbreviation = Column(String(10), unique=True, nullable=False)  # "kg", "L"
+    name = Column(String(100), nullable=False)  # e.g., "Kilogram", "Liter"
+    abbreviation = Column(String(20), nullable=False, unique=True)  # e.g., "kg", "L"
+    
+    # Display fields for flexible representation
+    symbol = Column(String(10))  # Short symbol: "g", "°C", "L"
+    display_name = Column(String(100))  # Full name: "gramos", "Grados Centígrados", "litros"
+    
     category_id = Column(Integer, ForeignKey("unit_categories.id"), nullable=False)
     
     # Conversion to base unit of category (e.g., 1 kg = 1000 g)

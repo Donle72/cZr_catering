@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     """
     # Project
     PROJECT_NAME: str = "cZr Catering System"
+    VERSION: str = "0.3.0"  # Updated: Tags system, Unit display refactor, Proposals
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     API_V1_PREFIX: str = "/api/v1"

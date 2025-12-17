@@ -30,6 +30,10 @@ class Ingredient(Base):
     # e.g., 1 kg = 1000 g, so conversion_ratio = 1000
     conversion_ratio = Column(Float, default=1.0, nullable=False)
     
+    # Unit label for conversion ratio (e.g., "g", "mL", "un")
+    # Clarifies what the conversion_ratio represents
+    conversion_unit = Column(String(20))
+    
     # Current cost per purchase unit
     current_cost = Column(Float, default=0.0, nullable=False)
     

@@ -4,6 +4,7 @@ Pydantic schemas for Ingredients with enhanced validation
 from pydantic import BaseModel, Field, field_validator, computed_field
 from typing import Optional
 from datetime import datetime
+from app.schemas.unit import UnitResponse
 
 
 class IngredientBase(BaseModel):
@@ -15,6 +16,7 @@ class IngredientBase(BaseModel):
     purchase_unit_id: int = Field(..., gt=0, description="Unit used for purchasing")
     usage_unit_id: int = Field(..., gt=0, description="Unit used in recipes")
     conversion_ratio: float = Field(default=1.0, gt=0, description="Conversion ratio between purchase and usage units")
+    conversion_unit: Optional[str] = Field(None, max_length=20, description="Unit label for conversion ratio (e.g., 'g', 'mL')")
     current_cost: float = Field(default=0.0, ge=0, description="Current cost per purchase unit")
     yield_factor: float = Field(
         default=1.0, 
@@ -89,6 +91,7 @@ class IngredientUpdate(BaseModel):
     purchase_unit_id: Optional[int] = Field(None, gt=0)
     usage_unit_id: Optional[int] = Field(None, gt=0)
     conversion_ratio: Optional[float] = Field(None, gt=0)
+    conversion_unit: Optional[str] = Field(None, max_length=20)
     current_cost: Optional[float] = Field(None, ge=0)
     yield_factor: Optional[float] = Field(None, gt=0, le=1.0)
     tax_rate: Optional[float] = Field(None, ge=0, le=1.0)
@@ -116,6 +119,10 @@ class IngredientResponse(IngredientBase):
     id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
+    
+    # Unit relationships
+    purchase_unit: Optional[UnitResponse] = None
+    usage_unit: Optional[UnitResponse] = None
     
     class Config:
         from_attributes = True

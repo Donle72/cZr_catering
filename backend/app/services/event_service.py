@@ -1,4 +1,4 @@
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload
 from app.models.event import Event, EventOrder, EventStatus
 from app.models.recipe import Recipe
 from fastapi import HTTPException

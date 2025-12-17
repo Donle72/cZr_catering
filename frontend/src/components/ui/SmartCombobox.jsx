@@ -31,28 +31,34 @@ export default function SmartCombobox({
 
     // Search Effect
     useEffect(() => {
-        if (debouncedSearch.length < 2) {
-            setResults([])
-            return
-        }
-
+        // Allow empty search to show initial results
         const fetchResults = async () => {
             setIsLoading(true)
             try {
-                const res = await axios.get(endpoint, {
-                    params: { q: debouncedSearch, limit: 10 }
-                })
-                setResults(res.data)
-                setIsOpen(true)
+                const params = { limit: 20 }
+                if (debouncedSearch) {
+                    params.search = debouncedSearch
+                }
+
+                const res = await axios.get('/api/v1/ingredients/', { params })
+
+                // Handle paginated response
+                const items = res.data.items || res.data
+                setResults(items)
+
+                if (items.length > 0) {
+                    setIsOpen(true)
+                }
             } catch (error) {
                 console.error("Search failed", error)
+                setResults([])
             } finally {
                 setIsLoading(false)
             }
         }
 
         fetchResults()
-    }, [debouncedSearch, endpoint])
+    }, [debouncedSearch])
 
     const handleSelect = (item) => {
         setSelectedItem(item)
@@ -112,9 +118,9 @@ export default function SmartCombobox({
             )}
 
             {/* No items state */}
-            {isOpen && !isLoading && searchTerm.length >= 2 && results.length === 0 && (
+            {isOpen && !isLoading && results.length === 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-4 text-center text-sm text-gray-500">
-                    No se encontraron ingredientes.
+                    {searchTerm ? 'No se encontraron ingredientes.' : 'Escribe para buscar ingredientes...'}
                 </div>
             )}
         </div>

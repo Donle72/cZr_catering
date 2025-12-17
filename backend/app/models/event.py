@@ -2,7 +2,7 @@
 Event and Event Order models
 Core sales object for catering events
 """
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Date, Text, Enum
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Date, Text, Enum, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -17,6 +17,7 @@ class EventStatus(str, enum.Enum):
     IN_PROGRESS = "in_progress"  # Event is happening
     COMPLETED = "completed"  # Event finished
     CANCELLED = "cancelled"
+
 
 
 class Event(Base):
@@ -36,15 +37,36 @@ class Event(Base):
     client_name = Column(String(200), nullable=False)
     client_email = Column(String(200))
     client_phone = Column(String(50))
+    client_company = Column(String(200))  # Empresa del cliente
+    
+    # Contact information (puede ser diferente del cliente)
+    contact_name = Column(String(200))
+    contact_email = Column(String(200))
+    contact_phone = Column(String(50))
     
     # Event details
     event_date = Column(Date, nullable=False, index=True)
     event_time = Column(String(20))  # e.g., "19:00"
-    guest_count = Column(Integer, nullable=False)
+    event_end_time = Column(String(20))  # Hora de fin
+    
+    # Event type (configurable, not hardcoded)
+    event_type = Column(String(100))  # COCKTAIL, COMPLETO_FORMAL, INFORMAL, etc.
+    service_type = Column(String(100))  # BARRA, CORTESIA, etc.
+    
+    # PAX breakdown
+    guest_count = Column(Integer, nullable=False)  # Total
+    adult_count = Column(Integer, default=0)
+    minor_count = Column(Integer, default=0)
+    
+    # Special dietary requirements (JSON for flexibility)
+    special_diets = Column(JSON)  # {"celiaco": 2, "vegano": 1, "bajo_sodio": 3}
     
     # Venue information (simplified for MVP)
     venue_name = Column(String(200))
     venue_address = Column(Text)
+    venue_city = Column(String(100))
+    venue_state = Column(String(100))
+    venue_zip = Column(String(20))
     
     # Status
     status = Column(Enum(EventStatus), default=EventStatus.PROSPECT, nullable=False, index=True)

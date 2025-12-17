@@ -40,18 +40,18 @@ def init_db():
         print("Creating units...")
         units = [
             # Weight
-            Unit(name="Kilogram", abbreviation="kg", category_id=weight_cat.id, conversion_to_base=1.0, is_base_unit=True),
-            Unit(name="Gram", abbreviation="g", category_id=weight_cat.id, conversion_to_base=0.001, is_base_unit=False),
-            Unit(name="Pound", abbreviation="lb", category_id=weight_cat.id, conversion_to_base=0.453592, is_base_unit=False),
+            Unit(name="Kilogram", abbreviation="kg", symbol="kg", display_name="kilogramos", category_id=weight_cat.id, conversion_to_base=1.0, is_base_unit=True),
+            Unit(name="Gram", abbreviation="g", symbol="g", display_name="gramos", category_id=weight_cat.id, conversion_to_base=0.001, is_base_unit=False),
+            Unit(name="Pound", abbreviation="lb", symbol="lb", display_name="libras", category_id=weight_cat.id, conversion_to_base=0.453592, is_base_unit=False),
             
             # Volume
-            Unit(name="Liter", abbreviation="L", category_id=volume_cat.id, conversion_to_base=1.0, is_base_unit=True),
-            Unit(name="Milliliter", abbreviation="mL", category_id=volume_cat.id, conversion_to_base=0.001, is_base_unit=False),
-            Unit(name="Cup", abbreviation="cup", category_id=volume_cat.id, conversion_to_base=0.236588, is_base_unit=False),
+            Unit(name="Liter", abbreviation="L", symbol="L", display_name="litros", category_id=volume_cat.id, conversion_to_base=1.0, is_base_unit=True),
+            Unit(name="Milliliter", abbreviation="mL", symbol="mL", display_name="mililitros", category_id=volume_cat.id, conversion_to_base=0.001, is_base_unit=False),
+            Unit(name="Cup", abbreviation="cup", symbol="cup", display_name="tazas", category_id=volume_cat.id, conversion_to_base=0.236588, is_base_unit=False),
             
             # Count
-            Unit(name="Unit", abbreviation="un", category_id=count_cat.id, conversion_to_base=1.0, is_base_unit=True),
-            Unit(name="Dozen", abbreviation="dz", category_id=count_cat.id, conversion_to_base=12.0, is_base_unit=False),
+            Unit(name="Unit", abbreviation="un", symbol="un", display_name="unidades", category_id=count_cat.id, conversion_to_base=1.0, is_base_unit=True),
+            Unit(name="Dozen", abbreviation="dz", symbol="dz", display_name="docenas", category_id=count_cat.id, conversion_to_base=12.0, is_base_unit=False),
         ]
         
         db.add_all(units)
@@ -102,7 +102,7 @@ def init_db():
         db.add_all(suppliers)
         db.commit()
         
-        # 4. Create Sample Ingredients
+        # 4. Create Sample Ingredients with STOCK
         print("Creating sample ingredients...")
         ingredients = [
             # Carnes
@@ -114,10 +114,13 @@ def init_db():
                 purchase_unit_id=kg_unit.id,
                 usage_unit_id=g_unit.id,
                 conversion_ratio=1000,
+                conversion_unit="g",
                 current_cost=8500.00,
                 yield_factor=0.85,  # 15% waste (trimming)
                 tax_rate=0.21,
-                default_supplier_id=suppliers[1].id
+                default_supplier_id=suppliers[1].id,
+                stock_quantity=25.0,  # 25 kg en stock
+                min_stock_threshold=5.0
             ),
             Ingredient(
                 name="Pollo Entero",
@@ -127,10 +130,13 @@ def init_db():
                 purchase_unit_id=kg_unit.id,
                 usage_unit_id=g_unit.id,
                 conversion_ratio=1000,
+                conversion_unit="g",
                 current_cost=1200.00,
                 yield_factor=0.70,  # 30% waste (bones, skin)
                 tax_rate=0.21,
-                default_supplier_id=suppliers[1].id
+                default_supplier_id=suppliers[1].id,
+                stock_quantity=40.0,  # 40 kg en stock
+                min_stock_threshold=10.0
             ),
             
             # Vegetales
@@ -142,10 +148,13 @@ def init_db():
                 purchase_unit_id=kg_unit.id,
                 usage_unit_id=g_unit.id,
                 conversion_ratio=1000,
+                conversion_unit="g",
                 current_cost=450.00,
                 yield_factor=0.80,  # 20% waste (peeling)
                 tax_rate=0.21,
-                default_supplier_id=suppliers[2].id
+                default_supplier_id=suppliers[2].id,
+                stock_quantity=100.0,  # 100 kg en stock
+                min_stock_threshold=20.0
             ),
             Ingredient(
                 name="Cebolla",
@@ -155,10 +164,13 @@ def init_db():
                 purchase_unit_id=kg_unit.id,
                 usage_unit_id=g_unit.id,
                 conversion_ratio=1000,
+                conversion_unit="g",
                 current_cost=380.00,
                 yield_factor=0.90,  # 10% waste
                 tax_rate=0.21,
-                default_supplier_id=suppliers[2].id
+                default_supplier_id=suppliers[2].id,
+                stock_quantity=50.0,  # 50 kg en stock
+                min_stock_threshold=10.0
             ),
             Ingredient(
                 name="Tomate",
@@ -168,10 +180,13 @@ def init_db():
                 purchase_unit_id=kg_unit.id,
                 usage_unit_id=g_unit.id,
                 conversion_ratio=1000,
+                conversion_unit="g",
                 current_cost=520.00,
                 yield_factor=0.95,  # 5% waste
                 tax_rate=0.21,
-                default_supplier_id=suppliers[2].id
+                default_supplier_id=suppliers[2].id,
+                stock_quantity=60.0,  # 60 kg en stock
+                min_stock_threshold=15.0
             ),
             
             # Lácteos
@@ -183,10 +198,13 @@ def init_db():
                 purchase_unit_id=l_unit.id,
                 usage_unit_id=ml_unit.id,
                 conversion_ratio=1000,
+                conversion_unit="mL",
                 current_cost=850.00,
                 yield_factor=1.0,  # No waste
                 tax_rate=0.21,
-                default_supplier_id=suppliers[0].id
+                default_supplier_id=suppliers[0].id,
+                stock_quantity=80.0,  # 80 L en stock
+                min_stock_threshold=20.0
             ),
             Ingredient(
                 name="Queso Parmesano",
@@ -196,10 +214,13 @@ def init_db():
                 purchase_unit_id=kg_unit.id,
                 usage_unit_id=g_unit.id,
                 conversion_ratio=1000,
+                conversion_unit="g",
                 current_cost=12500.00,
                 yield_factor=1.0,  # No waste (already processed)
                 tax_rate=0.21,
-                default_supplier_id=suppliers[0].id
+                default_supplier_id=suppliers[0].id,
+                stock_quantity=15.0,  # 15 kg en stock
+                min_stock_threshold=3.0
             ),
             
             # Especias
@@ -211,10 +232,13 @@ def init_db():
                 purchase_unit_id=kg_unit.id,
                 usage_unit_id=g_unit.id,
                 conversion_ratio=1000,
+                conversion_unit="g",
                 current_cost=180.00,
                 yield_factor=1.0,
                 tax_rate=0.21,
-                default_supplier_id=suppliers[0].id
+                default_supplier_id=suppliers[0].id,
+                stock_quantity=50.0,  # 50 kg en stock
+                min_stock_threshold=10.0
             ),
             Ingredient(
                 name="Pimienta Negra",
@@ -224,10 +248,13 @@ def init_db():
                 purchase_unit_id=kg_unit.id,
                 usage_unit_id=g_unit.id,
                 conversion_ratio=1000,
+                conversion_unit="g",
                 current_cost=3500.00,
                 yield_factor=1.0,
                 tax_rate=0.21,
-                default_supplier_id=suppliers[0].id
+                default_supplier_id=suppliers[0].id,
+                stock_quantity=10.0,  # 10 kg en stock
+                min_stock_threshold=2.0
             ),
             
             # Aceites
@@ -239,10 +266,13 @@ def init_db():
                 purchase_unit_id=l_unit.id,
                 usage_unit_id=ml_unit.id,
                 conversion_ratio=1000,
+                conversion_unit="mL",
                 current_cost=4500.00,
                 yield_factor=1.0,
                 tax_rate=0.21,
-                default_supplier_id=suppliers[0].id
+                default_supplier_id=suppliers[0].id,
+                stock_quantity=30.0,  # 30 L en stock
+                min_stock_threshold=10.0
             ),
         ]
         

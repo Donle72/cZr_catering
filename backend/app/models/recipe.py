@@ -62,6 +62,8 @@ class Recipe(Base):
         cascade="all, delete-orphan",
         foreign_keys="[RecipeItem.parent_recipe_id]"
     )
+    tags = relationship("Tag", secondary="recipe_tags", back_populates="recipes", lazy="select")
+
     
     @property
     def total_cost(self) -> float:

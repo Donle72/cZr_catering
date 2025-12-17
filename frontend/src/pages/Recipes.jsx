@@ -237,18 +237,11 @@ export default function Recipes() {
                                             <div className="flex items-center justify-center space-x-2">
                                                 <Link
                                                     to={`/recipes/${recipe.id}`}
-                                                    className="p-2 text-gray-400 hover:text-primary transition-colors"
-                                                    title="Ver Detalle"
-                                                >
-                                                    <Search className="w-4 h-4" />
-                                                </Link>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleEdit(recipe); }}
                                                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                    title="Editar"
+                                                    title="Editar Receta"
                                                 >
                                                     <Edit className="w-4 h-4" />
-                                                </button>
+                                                </Link>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleDelete(recipe.id); }}
                                                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"

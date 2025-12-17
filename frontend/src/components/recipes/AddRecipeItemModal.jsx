@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { X, Save, Search, AlertCircle, ChefHat, Carrot, Plus } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import PropTypes from 'prop-types'
 import CreateIngredientModal from '../ingredients/CreateIngredientModal'
 import SmartCombobox from '../ui/SmartCombobox'
-import { Controller } from 'react-hook-form'
 
 export default function AddRecipeItemModal({ isOpen, onClose, recipeId }) {
     const queryClient = useQueryClient()
@@ -163,7 +162,7 @@ export default function AddRecipeItemModal({ isOpen, onClose, recipeId }) {
                                                     <SmartCombobox
                                                         value={field.value}
                                                         onChange={field.onChange}
-                                                        placeholder="Buscar por nombre, SKU..."
+                                                        placeholder="Buscar ingrediente..."
                                                     />
                                                 )}
                                             />

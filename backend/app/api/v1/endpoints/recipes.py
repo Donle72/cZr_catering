@@ -168,6 +168,54 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
         "items": response_items
     }
 
+
+@router.put("/{recipe_id}", response_model=RecipeResponse)
+def update_recipe(
+    recipe_id: int,
+    recipe_data: RecipeUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update an existing recipe
+    """
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Update fields
+    update_data = recipe_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(recipe, key, value)
+    
+    db.commit()
+    db.refresh(recipe)
+    return recipe
+
+
+@router.delete("/{recipe_id}", status_code=204)
+def delete_recipe(
+    recipe_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a recipe and all its items
+    """
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Delete all items first (cascade should handle this, but being explicit)
+    db.query(RecipeItem).filter(RecipeItem.parent_recipe_id == recipe_id).delete()
+    
+    # Delete recipe
+    db.delete(recipe)
+    db.commit()
+    
+    return None
+
+
 @router.post("/{recipe_id}/items", status_code=201)
 def add_recipe_item(
     recipe_id: int,
