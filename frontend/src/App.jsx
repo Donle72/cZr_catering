@@ -8,6 +8,7 @@ import Events from './pages/Events'
 import EventDetail from './pages/EventDetail'
 import Production from './pages/Production'
 import Suppliers from './pages/Suppliers'
+import Assets from './pages/Assets'
 import Settings from './pages/Settings'
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
                     <Route path="/events/:id" element={<EventDetail />} />
                     <Route path="/production" element={<Production />} />
                     <Route path="/suppliers" element={<Suppliers />} />
+                    <Route path="/assets" element={<Assets />} />
                     <Route path="/settings" element={<Settings />} />
                 </Routes>
             </Layout>

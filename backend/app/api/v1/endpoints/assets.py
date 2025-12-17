@@ -53,6 +53,45 @@ def check_availability(
     available = AssetService.check_availability(db, asset_id, quantity)
     return {"available": available}
 
+
+@router.put("/{asset_id}", response_model=AssetResponse)
+def update_asset(
+    asset_id: int,
+    asset_data: AssetCreate,
+    db: Session = Depends(get_db)
+):
+    """Update an existing asset"""
+    asset = db.query(Asset).filter(Asset.id == asset_id).first()
+    
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    # Update fields
+    for key, value in asset_data.model_dump().items():
+        setattr(asset, key, value)
+    
+    db.commit()
+    db.refresh(asset)
+    return asset
+
+
+@router.delete("/{asset_id}", status_code=204)
+def delete_asset(
+    asset_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete an asset"""
+    asset = db.query(Asset).filter(Asset.id == asset_id).first()
+    
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    db.delete(asset)
+    db.commit()
+    
+    return None
+
+
 @router.post("/assign")
 def assign_asset_to_event(
     assignment: AssetAssign,
