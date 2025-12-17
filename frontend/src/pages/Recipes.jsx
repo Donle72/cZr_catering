@@ -4,26 +4,34 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
 import CreateRecipeModal from '../components/recipes/CreateRecipeModal'
+import Pagination from '../components/ui/Pagination'
 
 export default function Recipes() {
     const queryClient = useQueryClient()
     const [searchTerm, setSearchTerm] = useState('')
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [editingRecipe, setEditingRecipe] = useState(null)
+    const [page, setPage] = useState(1)
+    const [limit] = useState(10)
 
     // Fetch recipes
     const { data: recipesData, isLoading, error } = useQuery({
-        queryKey: ['recipes', searchTerm],
+        queryKey: ['recipes', searchTerm, page, limit],
         queryFn: async () => {
             const params = new URLSearchParams()
             if (searchTerm) params.append('search', searchTerm)
+            params.append('skip', (page - 1) * limit)
+            params.append('limit', limit)
 
             const response = await axios.get('/api/v1/recipes/', { params })
             return response.data
-        }
+        },
+        keepPreviousData: true
     })
 
     const recipes = recipesData?.items || []
+    const totalRecipes = recipesData?.total || 0
+    const totalPages = Math.ceil(totalRecipes / limit)
 
     const deleteMutation = useMutation({
         mutationFn: async (id) => {
@@ -54,7 +62,7 @@ export default function Recipes() {
     }
 
     // Calculate stats
-    const totalRecipes = recipesData?.total || 0
+    // Note: avgCost here is only for the current page. Ideal would be a stats endpoint.
     const avgCost = recipes.length > 0
         ? recipes.reduce((acc, curr) => acc + curr.cost_per_portion, 0) / recipes.length
         : 0
@@ -122,7 +130,7 @@ export default function Recipes() {
                 <div className="card bg-gradient-to-br from-green-50 to-green-100 border-green-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-green-600 font-medium mb-1">Costo Promedio (Porción)</p>
+                            <p className="text-sm text-green-600 font-medium mb-1">Costo Promedio (Pág)</p>
                             <p className="text-3xl font-bold text-green-900">{formatCurrency(avgCost)}</p>
                         </div>
                         <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
@@ -134,7 +142,7 @@ export default function Recipes() {
                 <div className="card bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-blue-600 font-medium mb-1">Recetas Rentables</p>
+                            <p className="text-sm text-blue-600 font-medium mb-1">Recetas Rentables (Pág)</p>
                             <p className="text-3xl font-bold text-blue-900">
                                 {recipes.filter(r => r.suggested_price > r.cost_per_portion).length}
                             </p>
@@ -256,6 +264,14 @@ export default function Recipes() {
                         </table>
                     </div>
                 )}
+
+                <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    hasNext={page < totalPages}
+                    hasPrev={page > 1}
+                />
             </div>
 
             <CreateRecipeModal

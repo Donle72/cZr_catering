@@ -2,7 +2,7 @@
 Main API router - aggregates all endpoint routers
 """
 from fastapi import APIRouter
-from app.api.v1.endpoints import ingredients, recipes, units, suppliers, events, production, i18n, search, estimation, simulation, assets
+from app.api.v1.endpoints import ingredients, recipes, units, suppliers, events, production, i18n, search, estimation, simulation, assets, stats
 
 api_router = APIRouter()
 
@@ -28,3 +28,5 @@ api_router.include_router(estimation.router, prefix="/estimation", tags=["estima
 api_router.include_router(simulation.router, prefix="/simulation", tags=["simulation"])
 
 api_router.include_router(assets.router, prefix="/assets", tags=["assets"])
+
+api_router.include_router(stats.router, prefix="/stats", tags=["stats"])

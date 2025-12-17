@@ -115,7 +115,7 @@ class ProductionService:
                         "id": ing.id,
                         "name": ing.name,
                         "sku": ing.sku,
-                        "category": ing.category_rel.name if ing.category_rel else None,
+                        "category": ing.category,
                         "unit": item.unit.name if item.unit else "units", # Assuming consistent units for MVP 
                         "stock": ing.stock_quantity,
                         "total_required": 0.0,

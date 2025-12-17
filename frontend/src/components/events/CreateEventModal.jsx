@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Calendar, Users, Briefcase } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -14,7 +14,7 @@ export default function CreateEventModal({ isOpen, onClose, eventToEdit = null }
     })
 
     // Reset or populate form
-    useState(() => {
+    useEffect(() => {
         if (isOpen) {
             if (eventToEdit) {
                 setFormData({
@@ -61,13 +61,19 @@ export default function CreateEventModal({ isOpen, onClose, eventToEdit = null }
 
     const handleSubmit = (e) => {
         e.preventDefault()
+        console.log('Submitting event:', { isEditing, eventToEdit, formData })
+
+        // Show user what's happening
+        const action = isEditing ? `Actualizando evento ID ${eventToEdit.id}` : 'Creando nuevo evento'
+        console.log(action)
+
         mutation.mutate(formData)
     }
 
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all scale-100">
                 <div className="flex justify-between items-center p-6 border-b border-gray-100">
                     <h2 className="text-2xl font-bold text-gray-800">{isEditing ? 'Editar Evento' : 'Nuevo Evento'}</h2>

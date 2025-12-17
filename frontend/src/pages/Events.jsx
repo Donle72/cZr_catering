@@ -4,20 +4,29 @@ import { Plus, Calendar, Users, DollarSign, ArrowRight, Edit, Trash2 } from 'luc
 import axios from 'axios'
 import CreateEventModal from '../components/events/CreateEventModal'
 import { Link } from 'react-router-dom'
+import FloatingActionButton from '../components/ui/FloatingActionButton'
+import Pagination from '../components/ui/Pagination'
 
 export default function Events() {
     const queryClient = useQueryClient()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [editingEvent, setEditingEvent] = useState(null)
+    const [page, setPage] = useState(1)
+    const [limit] = useState(10)
 
-    // Fetch Events
-    const { data: events, isLoading, error } = useQuery({
-        queryKey: ['events'],
+    // Fetch Events with Pagination
+    const { data, isLoading, error } = useQuery({
+        queryKey: ['events', page, limit],
         queryFn: async () => {
-            const res = await axios.get('/api/v1/events/')
+            const res = await axios.get(`/api/v1/events/?skip=${(page - 1) * limit}&limit=${limit}`)
             return res.data
-        }
+        },
+        keepPreviousData: true
     })
+
+    const events = data?.items || []
+    const totalEvents = data?.total || 0
+    const totalPages = Math.ceil(totalEvents / limit)
 
     const deleteMutation = useMutation({
         mutationFn: async (id) => {
@@ -55,12 +64,13 @@ export default function Events() {
         }).format(amount || 0)
     }
 
-    // Calculate Summary Stats
-    const stats = events ? {
-        totalEvents: events.length,
-        totalRevenue: events.reduce((acc, ev) => acc + (ev.total_revenue || 0), 0),
-        totalGuests: events.reduce((acc, ev) => acc + (ev.guest_count || 0), 0)
-    } : { totalEvents: 0, totalRevenue: 0, totalGuests: 0 }
+    // Calculate Summary Stats (Note: This only calculates for current page in this architecture, typically stats endpoint is separate)
+    // For now, we use the returned totals if available in metadata, or summing the current page is acceptable for "Revenue" until a dedicated stats endpoint exists.
+    const stats = {
+        totalEvents: totalEvents, // From backend count
+        totalRevenue: events.reduce((acc, ev) => acc + (ev.total_revenue || 0), 0), // Current Page Revenue
+        totalGuests: events.reduce((acc, ev) => acc + (ev.guest_count || 0), 0) // Current Page Guests
+    }
 
 
     if (isLoading) return <div className="p-8 text-center text-gray-500">Cargando eventos...</div>
@@ -74,13 +84,6 @@ export default function Events() {
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Eventos</h1>
                     <p className="text-gray-600">Gestiona tus eventos, cotizaciones y fechas.</p>
                 </div>
-                <button
-                    onClick={() => { setEditingEvent(null); setIsCreateModalOpen(true); }}
-                    className="btn btn-primary flex items-center space-x-2"
-                >
-                    <Plus className="w-5 h-5" />
-                    <span>Nuevo Evento</span>
-                </button>
             </div>
 
             {/* KPI Cards */}
@@ -100,7 +103,7 @@ export default function Events() {
                 <div className="card border-l-4 border-l-green-500">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500 font-medium mb-1">Ingresos Estimados</p>
+                            <p className="text-sm text-gray-500 font-medium mb-1">Ingresos (Pág)</p>
                             <p className="text-3xl font-bold text-gray-900">{formatCurrency(stats.totalRevenue)}</p>
                         </div>
                         <div className="p-3 bg-green-50 rounded-lg">
@@ -112,7 +115,7 @@ export default function Events() {
                 <div className="card border-l-4 border-l-purple-500">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500 font-medium mb-1">Total Invitados</p>
+                            <p className="text-sm text-gray-500 font-medium mb-1">Invitados (Pág)</p>
                             <p className="text-3xl font-bold text-gray-900">{stats.totalGuests}</p>
                         </div>
                         <div className="p-3 bg-purple-50 rounded-lg">
@@ -151,7 +154,7 @@ export default function Events() {
                             </thead>
                             <tbody>
                                 {events.map(event => (
-                                    <tr key={event.id} className="border-b border-gray-50 hover:bg-gray-50 text-sm transition-colors cursor-pointer" onClick={() => handleEdit(event)}>
+                                    <tr key={event.id} className="border-b border-gray-50 hover:bg-gray-50 text-sm transition-colors">
                                         <td className="py-4 px-4">
                                             <div className="font-bold text-gray-900">{event.name}</div>
                                             <div className="text-xs text-gray-500">{event.client_name}</div>
@@ -203,7 +206,20 @@ export default function Events() {
                         </table>
                     </div>
                 )}
+
+                <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    hasNext={page < totalPages}
+                    hasPrev={page > 1}
+                />
             </div>
+
+            <FloatingActionButton
+                onClick={() => { setEditingEvent(null); setIsCreateModalOpen(true); }}
+                label="Nuevo Evento"
+            />
 
             <CreateEventModal
                 isOpen={isCreateModalOpen}

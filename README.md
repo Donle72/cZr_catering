@@ -114,6 +114,41 @@ npm install
 npm run dev
 ```
 
+## 🧪 Testing
+
+### Running Tests
+
+```bash
+# Run all tests
+docker-compose exec backend pytest tests/ -v
+
+# Run with coverage report
+docker-compose exec backend pytest tests/ --cov=app --cov-report=html --cov-report=term
+
+# Run specific test file
+docker-compose exec backend pytest tests/test_models.py -v
+
+# Run specific test
+docker-compose exec backend pytest tests/test_models.py::TestIngredientModel::test_real_cost_calculation_with_yield_factor -v
+
+# View coverage report
+# Open backend/htmlcov/index.html in browser
+```
+
+### Test Structure
+
+- **`tests/conftest.py`** - Shared fixtures and test configuration
+- **`tests/test_models.py`** - Model unit tests
+- **`tests/test_api_*.py`** - API endpoint tests
+- **`tests/test_integration_workflows.py`** - Integration tests
+
+### Coverage Goals
+
+- Models: 80%+
+- Services: 70%+
+- API Endpoints: 70%+
+- Overall: 70%+
+
 ## 📚 Documentación
 
 ### Documentación Principal

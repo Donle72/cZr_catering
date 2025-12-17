@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, joinedload
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                from sqlalchemy.orm import Session, joinedload
 from app.models.event import Event, EventOrder, EventStatus
 from app.models.recipe import Recipe
 from fastapi import HTTPException
@@ -11,7 +11,7 @@ class EventService:
         return db.query(Event).filter(Event.id == event_id).first()
 
     @staticmethod
-    def create_event(db: Session, event_data: dict) -> Event:
+    def create_event(db: Session, event_data: dict) -> dict:
         # Generate ID if not present
         if "event_number" not in event_data:
             # Simple generation strategy: EVT-YYYYMMDD-HHMMSS
@@ -23,7 +23,29 @@ class EventService:
         db.add(event)
         db.commit()
         db.refresh(event)
-        return event
+        
+        # Return serializable dict
+        return {
+            "id": event.id,
+            "event_number": event.event_number,
+            "name": event.name,
+            "description": event.description,
+            "client_name": event.client_name,
+            "client_email": event.client_email,
+            "client_phone": event.client_phone,
+            "event_date": event.event_date.isoformat() if event.event_date else None,
+            "event_time": event.event_time,
+            "guest_count": event.guest_count,
+            "venue_name": event.venue_name,
+            "venue_address": event.venue_address,
+            "status": event.status.value if event.status else None,
+            "total_amount": event.total_amount,
+            "deposit_amount": event.deposit_amount,
+            "deposit_paid": event.deposit_paid,
+            "total_cost": event.total_cost,
+            "total_revenue": event.total_revenue,
+            "margin": event.margin
+        }
 
     @staticmethod
     def add_order_to_event(

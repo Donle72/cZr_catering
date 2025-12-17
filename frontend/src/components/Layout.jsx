@@ -5,6 +5,7 @@ import {
     Package,
     ChefHat,
     Calendar,
+    ClipboardList,
     Truck,
     Menu,
     X,
@@ -17,8 +18,7 @@ const navigation = [
     { name: 'Ingredientes', href: '/ingredients', icon: Package },
     { name: 'Recetas', href: '/recipes', icon: ChefHat },
     { name: 'Eventos', href: '/events', icon: Calendar },
-
-
+    { name: 'Producción', href: '/production', icon: ClipboardList },
     { name: 'Proveedores', href: '/suppliers', icon: Truck },
     { name: 'Activos', href: '/assets', icon: Package },
 ]

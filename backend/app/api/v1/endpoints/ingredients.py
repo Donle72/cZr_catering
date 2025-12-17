@@ -161,15 +161,29 @@ def bulk_price_update(
     
     ingredients = query.all()
     
+    # Allow empty results - return 0 updated
     if not ingredients:
-        raise HTTPException(status_code=404, detail="No ingredients found")
+        return {
+            "message": "No ingredients found in category",
+            "category": update_data.category or "all",
+            "percentage_increase": update_data.percentage_increase,
+            "multiplier": 1 + (update_data.percentage_increase / 100),
+            "ingredients_updated": 0,
+            "total_cost_before": 0.0,
+            "total_cost_after": 0.0
+        }
     
     updated_count = 0
     multiplier = 1 + (update_data.percentage_increase / 100)
+    total_cost_before = 0.0
+    total_cost_after = 0.0
     
     for ingredient in ingredients:
         old_cost = ingredient.current_cost
         new_cost = old_cost * multiplier
+        
+        total_cost_before += old_cost
+        total_cost_after += new_cost
         
         if new_cost != old_cost:
             ingredient.current_cost = new_cost
@@ -188,8 +202,12 @@ def bulk_price_update(
     db.commit()
     
     return {
-        "message": f"Updated {updated_count} ingredients",
+        "message": f"Successfully updated {updated_count} ingredient(s)",
         "category": update_data.category or "all",
         "percentage_increase": update_data.percentage_increase,
-        "multiplier": multiplier
+        "multiplier": multiplier,
+        "ingredients_updated": updated_count,
+        "total_cost_before": total_cost_before,
+        "total_cost_after": total_cost_after
     }
+

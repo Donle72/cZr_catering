@@ -10,10 +10,21 @@ router = APIRouter()
 
 
 @router.get("/")
-def list_events(db: Session = Depends(get_db)):
-    """List all events"""
-    events = db.query(Event).all()
-    return events
+def list_events(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
+    """List all events with pagination"""
+    total = db.query(Event).count()
+    events = db.query(Event).order_by(Event.event_date.desc()).offset(skip).limit(limit).all()
+    
+    return {
+        "items": events,
+        "total": total,
+        "page": (skip // limit) + 1,
+        "size": limit
+    }
 
 
 @router.get("/{event_id}")
@@ -49,6 +60,67 @@ def create_event(
     return EventService.create_event(db, event)
 
 
+@router.put("/{event_id}", response_model=dict)
+def update_event(
+    event_id: int,
+    event_data: dict,
+    db: Session = Depends(get_db)
+):
+    """Update an existing event"""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Update fields
+    for key, value in event_data.items():
+        if hasattr(event, key):
+            setattr(event, key, value)
+    
+    db.commit()
+    db.refresh(event)
+    
+    # Return serializable dict
+    return {
+        "id": event.id,
+        "event_number": event.event_number,
+        "name": event.name,
+        "description": event.description,
+        "client_name": event.client_name,
+        "client_email": event.client_email,
+        "client_phone": event.client_phone,
+        "event_date": event.event_date.isoformat() if event.event_date else None,
+        "event_time": event.event_time,
+        "guest_count": event.guest_count,
+        "venue_name": event.venue_name,
+        "venue_address": event.venue_address,
+        "status": event.status.value if event.status else None,
+        "total_amount": event.total_amount,
+        "deposit_amount": event.deposit_amount,
+        "deposit_paid": event.deposit_paid,
+        "total_cost": event.total_cost,
+        "total_revenue": event.total_revenue,
+        "margin": event.margin
+    }
+
+
+@router.delete("/{event_id}", status_code=204)
+def delete_event(
+    event_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete an event"""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    db.delete(event)
+    db.commit()
+    
+    return None
+
+
 @router.post("/{event_id}/items", response_model=dict)
 def add_event_item(
     event_id: int,
@@ -69,3 +141,4 @@ def add_event_item(
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+

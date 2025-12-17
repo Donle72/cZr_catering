@@ -1,45 +1,11 @@
+import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import axios from 'axios'
 import { TrendingUp, TrendingDown, DollarSign, Calendar, Package, ChefHat } from 'lucide-react'
-
-const stats = [
-    {
-        name: 'Eventos del Mes',
-        value: '12',
-        change: '+4.75%',
-        changeType: 'positive',
-        icon: Calendar,
-        color: 'from-blue-500 to-blue-600'
-    },
-    {
-        name: 'Ingresos Estimados',
-        value: '$45,231',
-        change: '+12.5%',
-        changeType: 'positive',
-        icon: DollarSign,
-        color: 'from-green-500 to-green-600'
-    },
-    {
-        name: 'Recetas Activas',
-        value: '89',
-        change: '+2',
-        changeType: 'positive',
-        icon: ChefHat,
-        color: 'from-purple-500 to-purple-600'
-    },
-    {
-        name: 'Ingredientes',
-        value: '234',
-        change: '-3',
-        changeType: 'negative',
-        icon: Package,
-        color: 'from-orange-500 to-orange-600'
-    },
-]
-
-const recentEvents = [
-    { id: 1, name: 'Casamiento Rodriguez', date: '2025-12-15', guests: 150, status: 'confirmed' },
-    { id: 2, name: 'Evento Corporativo Tech', date: '2025-12-18', guests: 80, status: 'quoted' },
-    { id: 3, name: 'Cumpleaños 50 años', date: '2025-12-20', guests: 60, status: 'confirmed' },
-]
+import CreateEventModal from '../components/events/CreateEventModal'
+import CreateRecipeModal from '../components/recipes/CreateRecipeModal'
+import CreateIngredientModal from '../components/ingredients/CreateIngredientModal'
 
 const statusColors = {
     confirmed: 'bg-green-100 text-green-800',
@@ -54,6 +20,73 @@ const statusLabels = {
 }
 
 export default function Dashboard() {
+    const navigate = useNavigate()
+    const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+    const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false)
+    const [isIngredientModalOpen, setIsIngredientModalOpen] = useState(false)
+
+    // Data Fetching
+    const { data: eventsData } = useQuery({
+        queryKey: ['dashboard_events'],
+        queryFn: async () => {
+            const res = await axios.get('/api/v1/events/?limit=5')
+            return res.data
+        }
+    })
+
+    const { data: statsData } = useQuery({
+        queryKey: ['dashboard_stats'],
+        queryFn: async () => {
+            const res = await axios.get('/api/v1/stats/dashboard')
+            return res.data
+        }
+    })
+
+    // Computed Stats
+    const stats = useMemo(() => [
+        {
+            name: 'Eventos del Mes',
+            value: statsData?.events_month || 0,
+            change: '-',
+            changeType: 'neutral',
+            icon: Calendar,
+            color: 'from-blue-500 to-blue-600'
+        },
+        {
+            name: 'Ingresos Estimados',
+            value: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(statsData?.revenue_month || 0),
+            change: '-',
+            changeType: 'neutral',
+            icon: DollarSign,
+            color: 'from-green-500 to-green-600'
+        },
+        {
+            name: 'Recetas Activas',
+            value: statsData?.active_recipes || 0,
+            change: '-',
+            changeType: 'neutral',
+            icon: ChefHat,
+            color: 'from-purple-500 to-purple-600'
+        },
+        {
+            name: 'Ingredientes',
+            value: statsData?.total_ingredients || 0,
+            change: '-',
+            changeType: 'neutral',
+            icon: Package,
+            color: 'from-orange-500 to-orange-600'
+        },
+    ], [statsData])
+
+    // Recent Events Mapping
+    const recentEvents = eventsData?.items?.map(ev => ({
+        id: ev.id,
+        name: ev.name,
+        date: new Date(ev.event_date).toLocaleDateString(),
+        guests: ev.guest_count,
+        status: ev.status
+    })) || []
+
     return (
         <div className="space-y-6 animate-fade-in">
             {/* Welcome Section */}
@@ -81,13 +114,11 @@ export default function Dashboard() {
                             <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform`}>
                                 <stat.icon className="w-6 h-6" />
                             </div>
-                            <div className={`flex items-center space-x-1 text-sm font-medium ${stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
+                            <div className={`flex items-center space-x-1 text-sm font-medium ${stat.changeType === 'positive' ? 'text-green-600' :
+                                stat.changeType === 'negative' ? 'text-red-600' : 'text-gray-600'
                                 }`}>
-                                {stat.changeType === 'positive' ? (
-                                    <TrendingUp className="w-4 h-4" />
-                                ) : (
-                                    <TrendingDown className="w-4 h-4" />
-                                )}
+                                {stat.changeType === 'positive' && <TrendingUp className="w-4 h-4" />}
+                                {stat.changeType === 'negative' && <TrendingDown className="w-4 h-4" />}
                                 <span>{stat.change}</span>
                             </div>
                         </div>
@@ -101,40 +132,44 @@ export default function Dashboard() {
             <div className="card">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-gray-900">Próximos Eventos</h2>
-                    <button type="button" onClick={() => console.log('Button clicked')} className="btn btn-primary text-sm">
+                    <button type="button" onClick={() => navigate('/events')} className="btn btn-primary text-sm">
                         Ver Todos
                     </button>
                 </div>
 
                 <div className="space-y-4">
-                    {recentEvents.map((event) => (
-                        <div
-                            key={event.id}
-                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                        >
-                            <div className="flex items-center space-x-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
-                                    {event.guests}
+                    {recentEvents.length > 0 ? (
+                        recentEvents.map((event) => (
+                            <div
+                                key={event.id}
+                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                            >
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
+                                        {event.guests}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-gray-900">{event.name}</h3>
+                                        <p className="text-sm text-gray-600">{event.date}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-semibold text-gray-900">{event.name}</h3>
-                                    <p className="text-sm text-gray-600">{event.date}</p>
+                                <div className="flex items-center space-x-3">
+                                    <span className="text-sm text-gray-600">{event.guests} invitados</span>
+                                    <span className={`badge ${statusColors[event.status] || 'bg-gray-100'}`}>
+                                        {statusLabels[event.status] || event.status}
+                                    </span>
                                 </div>
                             </div>
-                            <div className="flex items-center space-x-3">
-                                <span className="text-sm text-gray-600">{event.guests} invitados</span>
-                                <span className={`badge ${statusColors[event.status]}`}>
-                                    {statusLabels[event.status]}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <p className="text-center text-gray-500 py-4">No hay eventos recientes.</p>
+                    )}
                 </div>
             </div>
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <button type="button" onClick={() => console.log('Button clicked')} className="card-hover text-left group">
+                <button type="button" onClick={() => setIsEventModalOpen(true)} className="card-hover text-left group">
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
                         <Calendar className="w-6 h-6" />
                     </div>
@@ -142,7 +177,7 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-600">Crear una nueva cotización o evento</p>
                 </button>
 
-                <button type="button" onClick={() => console.log('Button clicked')} className="card-hover text-left group">
+                <button type="button" onClick={() => setIsRecipeModalOpen(true)} className="card-hover text-left group">
                     <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
                         <ChefHat className="w-6 h-6" />
                     </div>
@@ -150,7 +185,7 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-600">Agregar una receta al sistema</p>
                 </button>
 
-                <button type="button" onClick={() => console.log('Button clicked')} className="card-hover text-left group">
+                <button type="button" onClick={() => setIsIngredientModalOpen(true)} className="card-hover text-left group">
                     <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
                         <Package className="w-6 h-6" />
                     </div>
@@ -158,6 +193,21 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-600">Registrar un nuevo ingrediente</p>
                 </button>
             </div>
+
+            <CreateEventModal
+                isOpen={isEventModalOpen}
+                onClose={() => setIsEventModalOpen(false)}
+            />
+
+            <CreateRecipeModal
+                isOpen={isRecipeModalOpen}
+                onClose={() => setIsRecipeModalOpen(false)}
+            />
+
+            <CreateIngredientModal
+                isOpen={isIngredientModalOpen}
+                onClose={() => setIsIngredientModalOpen(false)}
+            />
         </div>
     )
 }

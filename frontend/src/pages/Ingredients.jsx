@@ -3,25 +3,42 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Search, Filter, TrendingUp, DollarSign, Edit, Trash2 } from 'lucide-react'
 import axios from 'axios'
 import CreateIngredientModal from '../components/ingredients/CreateIngredientModal'
+import Pagination from '../components/ui/Pagination'
 
 export default function Ingredients() {
     const queryClient = useQueryClient()
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategory, setSelectedCategory] = useState('')
     const [editingIngredient, setEditingIngredient] = useState(null)
+    const [page, setPage] = useState(1)
+    const [limit] = useState(10)
 
     // Fetch ingredients
     const { data, isLoading, error } = useQuery({
-        queryKey: ['ingredients', searchTerm, selectedCategory],
+        queryKey: ['ingredients', searchTerm, selectedCategory, page, limit],
         queryFn: async () => {
             const params = new URLSearchParams()
             if (searchTerm) params.append('search', searchTerm)
             if (selectedCategory) params.append('category', selectedCategory)
+            params.append('skip', (page - 1) * limit)
+            params.append('limit', limit)
 
             const response = await axios.get(`/api/v1/ingredients/?${params}`)
             return response.data
+        },
+        keepPreviousData: true
+    })
+
+    const { data: statsData } = useQuery({
+        queryKey: ['dashboard_stats'],
+        queryFn: async () => {
+            const res = await axios.get('/api/v1/stats/dashboard')
+            return res.data
         }
     })
+
+    const totalIngredients = data?.total || 0
+    const totalPages = Math.ceil(totalIngredients / limit)
 
     const deleteMutation = useMutation({
         mutationFn: async (id) => {
@@ -80,6 +97,7 @@ export default function Ingredients() {
                 ingredientToEdit={editingIngredient}
                 onSuccess={(data) => {
                     handleCloseModal()
+                    queryClient.invalidateQueries(['ingredients'])
                 }}
             />
 
@@ -127,7 +145,7 @@ export default function Ingredients() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-blue-600 font-medium mb-1">Total Ingredientes</p>
-                            <p className="text-3xl font-bold text-blue-900">{data?.total || 0}</p>
+                            <p className="text-3xl font-bold text-blue-900">{totalIngredients}</p>
                         </div>
                         <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
                             <DollarSign className="w-6 h-6 text-white" />
@@ -139,7 +157,9 @@ export default function Ingredients() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-green-600 font-medium mb-1">Valor Inventario</p>
-                            <p className="text-3xl font-bold text-green-900">$12,450</p>
+                            <p className="text-3xl font-bold text-green-900">
+                                {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(statsData?.inventory_value || 0)}
+                            </p>
                         </div>
                         <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
                             <DollarSign className="w-6 h-6 text-white" />
@@ -151,7 +171,7 @@ export default function Ingredients() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-orange-600 font-medium mb-1">Bajo Stock</p>
-                            <p className="text-3xl font-bold text-orange-900">5</p>
+                            <p className="text-3xl font-bold text-orange-900">{statsData?.low_stock_count || 0}</p>
                         </div>
                         <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
                             <TrendingUp className="w-6 h-6 text-white" />
@@ -273,6 +293,14 @@ export default function Ingredients() {
                     </div>
                 )}
             </div>
+
+            <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                hasNext={page < totalPages}
+                hasPrev={page > 1}
+            />
         </div>
     )
 }
