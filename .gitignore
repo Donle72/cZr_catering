@@ -63,6 +63,7 @@ logs/
 
 # Testing
 .coverage
+coverage.xml
 htmlcov/
 .pytest_cache/
 coverage/
@@ -78,3 +79,4 @@ pip-delete-this-directory.txt
 # OS
 Thumbs.db
 .DS_Store
+backend/coverage.xml.backup
