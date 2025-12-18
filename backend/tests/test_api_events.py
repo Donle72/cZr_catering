@@ -104,6 +104,56 @@ class TestEventsAPI:
         response = client.get("/api/v1/events/9999")
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
+    
+    def test_delete_event(self, client):
+        """Test DELETE /events/{id} - Delete event"""
+        # First create an event to delete
+        new_event = {
+            "event_number": "EVT-DELETE-001",
+            "name": "Temporary Event",
+            "client_name": "Test Client",
+            "client_email": "test@test.com",
+            "event_date": "2025-12-31",
+            "guest_count": 10,
+            "status": "prospect",
+        }
+        
+        create_response = client.post("/api/v1/events/", json=new_event)
+        event_id = create_response.json()["id"]
+        
+        # Delete it
+        response = client.delete(f"/api/v1/events/{event_id}")
+        
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        
+        # Verify it's deleted
+        get_response = client.get(f"/api/v1/events/{event_id}")
+        assert get_response.status_code == status.HTTP_404_NOT_FOUND
+    
+    def test_delete_nonexistent_event_returns_404(self, client):
+        """Test that deleting non-existent event returns 404"""
+        response = client.delete("/api/v1/events/9999")
+        
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+    
+    def test_add_event_order(self, client, sample_events, sample_recipes):
+        """Test POST /events/{id}/items - Add order to event"""
+        event_id = sample_events[0].id
+        recipe_id = sample_recipes[0].id
+        
+        order_data = {
+            "recipe_id": recipe_id,
+            "quantity": 5,
+            "unit_price": 25.00,
+        }
+        
+        response = client.post(f"/api/v1/events/{event_id}/items", json=order_data)
+        
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "id" in data
+        assert data["recipe_id"] == recipe_id
+        assert data["quantity"] == 5
 
 
 class TestEventCalculations:

@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Plus, Trash2, Save, ChefHat, DollarSign, PieChart, Users, Clock, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Save, ChefHat, DollarSign, PieChart, Users, Clock, AlertCircle, Edit, Tag, X } from 'lucide-react'
 import axios from 'axios'
 import { useState } from 'react'
 import AddRecipeItemModal from '../components/recipes/AddRecipeItemModal'
@@ -9,12 +9,23 @@ export default function RecipeDetail() {
     const { id } = useParams()
     const queryClient = useQueryClient()
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+    const [editingItem, setEditingItem] = useState(null)
+    const [showTagSelector, setShowTagSelector] = useState(false)
 
     // Fetch recipe details
     const { data: recipe, isLoading, error } = useQuery({
         queryKey: ['recipe', id],
         queryFn: async () => {
             const response = await axios.get(`/api/v1/recipes/${id}`)
+            return response.data
+        }
+    })
+
+    // Fetch available tags
+    const { data: availableTags = [] } = useQuery({
+        queryKey: ['tags'],
+        queryFn: async () => {
+            const response = await axios.get('/api/v1/tags/')
             return response.data
         }
     })
@@ -32,6 +43,65 @@ export default function RecipeDetail() {
     const handleDeleteItem = (itemId) => {
         if (window.confirm('¿Estás seguro de quitar este ingrediente?')) {
             deleteItemMutation.mutate(itemId)
+        }
+    }
+
+    // Update item mutation
+    const updateItemMutation = useMutation({
+        mutationFn: async ({ itemId, data }) => {
+            await axios.put(`/api/v1/recipes/${id}/items/${itemId}`, data)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['recipe', id])
+            setEditingItem(null)
+        }
+    })
+
+    // Add tag mutation
+    const addTagMutation = useMutation({
+        mutationFn: async (tagId) => {
+            await axios.post(`/api/v1/recipes/${id}/tags/${tagId}`)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['recipe', id])
+            queryClient.invalidateQueries(['recipes'])
+        },
+        onError: (error) => {
+            alert('Error al agregar tag: ' + (error.response?.data?.detail?.message || error.message))
+        }
+    })
+
+    // Remove tag mutation
+    const removeTagMutation = useMutation({
+        mutationFn: async (tagId) => {
+            await axios.delete(`/api/v1/recipes/${id}/tags/${tagId}`)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['recipe', id])
+            queryClient.invalidateQueries(['recipes'])
+        },
+        onError: (error) => {
+            alert('Error al quitar tag: ' + (error.response?.data?.detail || error.message))
+        }
+    })
+
+    const handleEditItem = (item) => {
+        setEditingItem({
+            id: item.id,
+            quantity: item.quantity,
+            notes: item.notes || ''
+        })
+    }
+
+    const handleSaveEdit = () => {
+        if (editingItem) {
+            updateItemMutation.mutate({
+                itemId: editingItem.id,
+                data: {
+                    quantity: parseFloat(editingItem.quantity),
+                    notes: editingItem.notes
+                }
+            })
         }
     }
 
@@ -107,6 +177,73 @@ export default function RecipeDetail() {
                 </div>
             </div>
 
+            {/* Tags Section */}
+            <div className="card">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <Tag className="w-5 h-5 text-gray-400" />
+                        Etiquetas
+                    </h2>
+                    <button
+                        onClick={() => setShowTagSelector(!showTagSelector)}
+                        className="btn btn-sm btn-outline flex items-center gap-2"
+                    >
+                        <Plus className="w-4 h-4" />
+                        {showTagSelector ? 'Ocultar' : 'Agregar Tag'}
+                    </button>
+                </div>
+
+                {/* Current Tags */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                    {recipe.tags && recipe.tags.length > 0 ? (
+                        recipe.tags.map(tag => (
+                            <div
+                                key={tag.id}
+                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200"
+                            >
+                                <span className="text-sm font-medium">{tag.name}</span>
+                                <button
+                                    onClick={() => removeTagMutation.mutate(tag.id)}
+                                    className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                                    title="Quitar tag"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-gray-500 text-sm">No hay etiquetas asignadas</p>
+                    )}
+                </div>
+
+                {/* Tag Selector */}
+                {showTagSelector && (
+                    <div className="border-t border-gray-100 pt-4">
+                        <p className="text-sm text-gray-600 mb-3">Selecciona una etiqueta para agregar:</p>
+                        <div className="flex flex-wrap gap-2">
+                            {availableTags
+                                .filter(tag => !recipe.tags?.some(t => t.id === tag.id))
+                                .map(tag => (
+                                    <button
+                                        key={tag.id}
+                                        onClick={() => {
+                                            addTagMutation.mutate(tag.id)
+                                            setShowTagSelector(false)
+                                        }}
+                                        className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-800 border border-gray-200 hover:border-blue-200 transition-colors"
+                                    >
+                                        {tag.name}
+                                    </button>
+                                ))
+                            }
+                            {availableTags.filter(tag => !recipe.tags?.some(t => t.id === tag.id)).length === 0 && (
+                                <p className="text-gray-500 text-sm">Todas las etiquetas ya están asignadas</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* Composition Table */}
             <div className="card">
                 <div className="flex items-center justify-between mb-6">
@@ -166,13 +303,22 @@ export default function RecipeDetail() {
                                             {item.notes || '-'}
                                         </td>
                                         <td className="py-3 px-4 text-right">
-                                            <button
-                                                onClick={() => handleDeleteItem(item.id)}
-                                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                                title="Eliminar"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleEditItem(item)}
+                                                    className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                                                    title="Editar"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteItem(item.id)}
+                                                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                                    title="Eliminar"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -192,6 +338,65 @@ export default function RecipeDetail() {
                 onClose={() => setIsAddModalOpen(false)}
                 recipeId={parseInt(id)}
             />
+
+            {/* Edit Item Modal */}
+            {editingItem && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Editar Ingrediente</h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Cantidad
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="input w-full"
+                                    value={editingItem.quantity}
+                                    onChange={(e) => setEditingItem({
+                                        ...editingItem,
+                                        quantity: e.target.value
+                                    })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Notas (opcional)
+                                </label>
+                                <textarea
+                                    className="input w-full"
+                                    rows="3"
+                                    value={editingItem.notes}
+                                    onChange={(e) => setEditingItem({
+                                        ...editingItem,
+                                        notes: e.target.value
+                                    })}
+                                    placeholder="Ej: Picar finamente, reservar para decorar..."
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => setEditingItem(null)}
+                                className="btn btn-outline flex-1"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                className="btn btn-primary flex-1"
+                                disabled={updateItemMutation.isLoading}
+                            >
+                                {updateItemMutation.isLoading ? 'Guardando...' : 'Guardar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

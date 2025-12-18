@@ -47,9 +47,20 @@ export default function Ingredients() {
         onSuccess: () => {
             queryClient.invalidateQueries(['ingredients'])
             queryClient.invalidateQueries(['ingredients_list'])
+            alert('Ingrediente eliminado exitosamente')
         },
         onError: (error) => {
-            alert('Error al eliminar: ' + (error.response?.data?.detail || error.message))
+            if (error.response?.status === 409) {
+                // Ingredient is in use
+                const detail = error.response.data.detail
+                const recipeList = detail.recipes_using?.join(', ') || 'recetas'
+                const message = `❌ ${detail.message}\n\n` +
+                    `📋 Recetas que lo usan:\n${recipeList}\n\n` +
+                    `💡 ${detail.suggestion}`
+                alert(message)
+            } else {
+                alert('Error al eliminar: ' + (error.response?.data?.detail || error.message))
+            }
         }
     })
 

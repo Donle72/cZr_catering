@@ -134,11 +134,41 @@ def delete_ingredient(
     db: Session = Depends(get_db)
 ):
     """Delete an ingredient"""
+    from app.models.recipe import RecipeItem
+    from app.models.ingredient import IngredientPriceHistory
+    from sqlalchemy.orm import joinedload
+    
     db_ingredient = db.query(Ingredient).filter(Ingredient.id == ingredient_id).first()
     
     if not db_ingredient:
         raise HTTPException(status_code=404, detail="Ingredient not found")
     
+    # Check if ingredient is used in any recipes (use joinedload to avoid lazy loading issues)
+    recipes_using = db.query(RecipeItem).options(
+        joinedload(RecipeItem.parent_recipe)
+    ).filter(RecipeItem.ingredient_id == ingredient_id).all()
+    
+    if recipes_using:
+        # Get unique recipe names
+        recipe_names = list(set([item.parent_recipe.name for item in recipes_using if item.parent_recipe]))
+        
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": f"Cannot delete ingredient '{db_ingredient.name}' because it is used in {len(recipe_names)} recipe(s)",
+                "ingredient_name": db_ingredient.name,
+                "recipes_using": recipe_names[:10],  # Limit to first 10
+                "total_recipes": len(recipe_names),
+                "suggestion": "Remove this ingredient from all recipes before deleting, or consider marking it as inactive instead"
+            }
+        )
+    
+    # Delete price history first (to avoid FK constraint error)
+    db.query(IngredientPriceHistory).filter(
+        IngredientPriceHistory.ingredient_id == ingredient_id
+    ).delete()
+    
+    # Now delete the ingredient
     db.delete(db_ingredient)
     db.commit()
     

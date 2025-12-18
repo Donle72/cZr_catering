@@ -13,7 +13,8 @@ from app.schemas.recipe import (
     RecipeCreate, 
     RecipeUpdate, 
     RecipeResponse, 
-    RecipeItemCreate
+    RecipeItemCreate,
+    RecipeItemUpdate
 )
 from app.services.recipe_service import RecipeService
 
@@ -52,7 +53,8 @@ def list_recipes(
             "total_cost": r.total_cost,
             "cost_per_portion": r.cost_per_portion,
             "suggested_price": r.suggested_price,
-            "target_margin": r.target_margin
+            "target_margin": r.target_margin,
+            "tags": [{"id": t.id, "name": t.name, "category": t.category, "description": t.description} for t in r.tags]
         })
     
     return {
@@ -165,7 +167,8 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
         "total_cost": recipe.total_cost,
         "cost_per_portion": recipe.cost_per_portion,
         "suggested_price": recipe.suggested_price,
-        "items": response_items
+        "items": response_items,
+        "tags": [{"id": t.id, "name": t.name, "category": t.category, "description": t.description} for t in recipe.tags]
     }
 
 
@@ -274,6 +277,108 @@ def remove_recipe_item(
         raise HTTPException(status_code=404, detail="Item not found")
         
     db.delete(item)
+    db.commit()
+    
+    return None
+
+
+@router.put("/{recipe_id}/items/{item_id}", status_code=200)
+def update_recipe_item(
+    recipe_id: int,
+    item_id: int,
+    item_update: RecipeItemUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update quantity and/or notes of a recipe item
+    """
+    # Validate recipe exists
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Validate item exists and belongs to recipe
+    item = db.query(RecipeItem).filter(
+        RecipeItem.id == item_id,
+        RecipeItem.parent_recipe_id == recipe_id
+    ).first()
+    
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    # Update fields
+    update_data = item_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(item, key, value)
+    
+    db.commit()
+    db.refresh(recipe)  # Refresh to recalculate costs
+    
+    return {
+        "message": "Item updated successfully",
+        "new_total_cost": recipe.total_cost
+    }
+
+
+@router.post("/{recipe_id}/tags/{tag_id}", status_code=201)
+def add_tag_to_recipe(
+    recipe_id: int,
+    tag_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Assign a tag to a recipe
+    """
+    from app.models.tag import Tag
+    
+    # Validate recipe exists
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Validate tag exists
+    tag = db.query(Tag).filter(Tag.id == tag_id).first()
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    
+    # Check if already assigned
+    if tag in recipe.tags:
+        raise HTTPException(status_code=400, detail="Tag already assigned to this recipe")
+    
+    # Add tag to recipe
+    recipe.tags.append(tag)
+    db.commit()
+    
+    return {"message": "Tag added successfully", "tag": tag.name}
+
+
+@router.delete("/{recipe_id}/tags/{tag_id}", status_code=204)
+def remove_tag_from_recipe(
+    recipe_id: int,
+    tag_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Remove a tag from a recipe
+    """
+    from app.models.tag import Tag
+    
+    # Validate recipe exists
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Validate tag exists
+    tag = db.query(Tag).filter(Tag.id == tag_id).first()
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    
+    # Check if tag is assigned
+    if tag not in recipe.tags:
+        raise HTTPException(status_code=404, detail="Tag not assigned to this recipe")
+    
+    # Remove tag from recipe
+    recipe.tags.remove(tag)
     db.commit()
     
     return None

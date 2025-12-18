@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 from datetime import datetime
 from app.schemas.ingredient import IngredientResponse
+from app.schemas.tag import TagResponse
 
 class RecipeItemBase(BaseModel):
     quantity: float
@@ -12,6 +13,13 @@ class RecipeItemBase(BaseModel):
 class RecipeItemCreate(RecipeItemBase):
     ingredient_id: Optional[int] = None
     child_recipe_id: Optional[int] = None
+
+class RecipeItemUpdate(BaseModel):
+    """Update recipe item (quantity, notes, unit)"""
+    quantity: Optional[float] = None
+    notes: Optional[str] = None
+    unit_id: Optional[int] = None
+    is_scalable: Optional[bool] = None
 
 class RecipeItemResponse(RecipeItemBase):
     id: int
@@ -50,6 +58,7 @@ class RecipeResponse(RecipeBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     items: List[RecipeItemResponse] = []
+    tags: List[TagResponse] = []  # ADD THIS
 
     class Config:
         from_attributes = True

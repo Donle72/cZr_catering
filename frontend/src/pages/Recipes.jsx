@@ -198,6 +198,7 @@ export default function Recipes() {
                                 <tr className="border-b border-gray-100">
                                     <th className="text-left py-4 px-4 text-gray-500 font-medium">Nombre</th>
                                     <th className="text-left py-4 px-4 text-gray-500 font-medium">Tipo</th>
+                                    <th className="text-left py-4 px-4 text-gray-500 font-medium">Tags</th>
                                     <th className="text-right py-4 px-4 text-gray-500 font-medium">Rendimiento</th>
                                     <th className="text-right py-4 px-4 text-gray-500 font-medium">Costo Porción</th>
                                     <th className="text-right py-4 px-4 text-gray-500 font-medium">Precio Sug.</th>
@@ -218,6 +219,23 @@ export default function Recipes() {
                                             <span className={`badge ${getTypeBadgeColor(recipe.recipe_type)}`}>
                                                 {translateType(recipe.recipe_type)}
                                             </span>
+                                        </td>
+                                        <td className="py-4 px-4">
+                                            <div className="flex flex-wrap gap-1">
+                                                {recipe.tags && recipe.tags.length > 0 ? (
+                                                    recipe.tags.map(tag => (
+                                                        <span
+                                                            key={tag.id}
+                                                            className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200"
+                                                            title={tag.description || tag.name}
+                                                        >
+                                                            {tag.name}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm">-</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="py-4 px-4 text-right">
                                             {recipe.yield_quantity}

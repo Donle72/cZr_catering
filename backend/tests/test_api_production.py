@@ -48,14 +48,18 @@ class TestProductionAPI:
         future_date = date.today() + timedelta(days=365)
         end_date = future_date + timedelta(days=7)
         
-        # This might fail due to the bug, so we skip it
-        pytest.skip("Production service has known bug")
+        response = client.get(
+            f"/api/v1/production/plan?start_date={future_date}&end_date={end_date}"
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert len(data["events"]) == 0
 
 
 class TestProductionService:
     """Tests for ProductionService logic"""
     
-    @pytest.mark.skip(reason="Production service needs bug fix first")
     def test_recipe_explosion(self, db_session, sample_recipes):
         """Test that recipes are correctly exploded into ingredients"""
         from app.services.production_service import ProductionService
@@ -71,7 +75,6 @@ class TestProductionService:
         # Should have ingredients
         assert len(ing_agg) > 0
     
-    @pytest.mark.skip(reason="Production service needs bug fix first")
     def test_scaling_factor_calculation(self, db_session, sample_recipes):
         """Test that scaling factor is correctly calculated"""
         from app.services.production_service import ProductionService

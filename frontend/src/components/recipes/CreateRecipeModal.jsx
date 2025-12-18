@@ -1,14 +1,24 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { X, Save, AlertCircle } from 'lucide-react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { X, Save, AlertCircle, Tag as TagIcon } from 'lucide-react'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import PropTypes from 'prop-types';
 
 export default function CreateRecipeModal({ isOpen, onClose, recipeToEdit = null }) {
     const queryClient = useQueryClient()
     const [serverError, setServerError] = useState('')
+    const [selectedTags, setSelectedTags] = useState([])
     const isEditing = !!recipeToEdit
+
+    // Fetch available tags
+    const { data: availableTags = [] } = useQuery({
+        queryKey: ['tags'],
+        queryFn: async () => {
+            const response = await axios.get('/api/v1/tags/')
+            return response.data
+        }
+    })
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm({
         defaultValues: {
@@ -35,6 +45,8 @@ export default function CreateRecipeModal({ isOpen, onClose, recipeToEdit = null
                     preparation_time: recipeToEdit.preparation_time,
                     shelf_life_hours: recipeToEdit.shelf_life_hours
                 })
+                // Set selected tags from recipe
+                setSelectedTags(recipeToEdit.tags?.map(t => t.id) || [])
             } else {
                 reset({
                     name: '',
@@ -45,6 +57,7 @@ export default function CreateRecipeModal({ isOpen, onClose, recipeToEdit = null
                     preparation_time: 0,
                     shelf_life_hours: 24
                 })
+                setSelectedTags([])
             }
             setServerError('')
         }
@@ -52,17 +65,52 @@ export default function CreateRecipeModal({ isOpen, onClose, recipeToEdit = null
 
     const mutation = useMutation({
         mutationFn: async (data) => {
+            let recipe
             if (isEditing) {
                 const response = await axios.put(`/api/v1/recipes/${recipeToEdit.id}`, data)
-                return response.data
+                recipe = response.data
             } else {
                 const response = await axios.post('/api/v1/recipes/', data)
-                return response.data
+                recipe = response.data
             }
+
+            // Handle tags assignment
+            if (recipe && recipe.id) {
+                // Get CURRENT tags from server (not from recipeToEdit which may be stale)
+                let currentTagIds = []
+                if (isEditing) {
+                    try {
+                        const currentRecipe = await axios.get(`/api/v1/recipes/${recipe.id}`)
+                        currentTagIds = currentRecipe.data.tags?.map(t => t.id) || []
+                    } catch (error) {
+                        console.error('Error fetching current tags:', error)
+                        currentTagIds = recipeToEdit?.tags?.map(t => t.id) || []
+                    }
+                }
+
+                // Tags to add (in selectedTags but not in current)
+                const tagsToAdd = selectedTags.filter(id => !currentTagIds.includes(id))
+
+                // Tags to remove (in current but not in selectedTags)
+                const tagsToRemove = currentTagIds.filter(id => !selectedTags.includes(id))
+
+                // Add new tags
+                for (const tagId of tagsToAdd) {
+                    await axios.post(`/api/v1/recipes/${recipe.id}/tags/${tagId}`)
+                }
+
+                // Remove unselected tags
+                for (const tagId of tagsToRemove) {
+                    await axios.delete(`/api/v1/recipes/${recipe.id}/tags/${tagId}`)
+                }
+            }
+
+            return recipe
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['recipes'])
             reset()
+            setSelectedTags([])
             onClose()
             setServerError('')
         },
@@ -185,6 +233,40 @@ export default function CreateRecipeModal({ isOpen, onClose, recipeToEdit = null
                                     {...register('shelf_life_hours')}
                                 />
                             </div>
+                        </div>
+
+                        {/* Tags */}
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                <TagIcon className="w-4 h-4" />
+                                Etiquetas
+                            </label>
+                            <div className="flex flex-wrap gap-2 p-3 border border-gray-200 rounded-lg min-h-[60px]">
+                                {availableTags.length > 0 ? (
+                                    availableTags.map(tag => (
+                                        <button
+                                            key={tag.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedTags(prev =>
+                                                    prev.includes(tag.id)
+                                                        ? prev.filter(id => id !== tag.id)
+                                                        : [...prev, tag.id]
+                                                )
+                                            }}
+                                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${selectedTags.includes(tag.id)
+                                                ? 'bg-primary-500 text-white'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                        >
+                                            {tag.name}
+                                        </button>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-gray-500">No hay etiquetas disponibles</p>
+                                )}
+                            </div>
+                            <p className="text-xs text-gray-500">Selecciona las etiquetas que aplican a esta receta</p>
                         </div>
                     </div>
 
